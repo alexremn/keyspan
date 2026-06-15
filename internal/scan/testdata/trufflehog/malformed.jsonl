@@ -1,0 +1,3 @@
+{"DetectorName":"GitHub","SourceMetadata":{"Data":{"Filesystem":{"file":"a.txt","line":1}}}}
+{not valid json at all
+{"DetectorName":"Slack","SourceMetadata":{"Data":{"Filesystem":{"file":"b.txt","line":2}}}}
