@@ -1,0 +1,13 @@
+name: ci
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        run: echo hello
+      - name: deploy
+        run: deploy.sh
+        with:
+          token: ${{ secrets.DEPLOY_TOKEN }}
+          aws_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
