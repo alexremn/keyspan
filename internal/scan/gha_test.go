@@ -114,3 +114,60 @@ func TestGHAScannerStepWithoutSecretsHasNoEdge(t *testing.T) {
 		}
 	}
 }
+
+func TestGHAScannerEnvIndirectionOneHop(t *testing.T) {
+	// Arrange
+	s := newGHAScanner()
+
+	// Act
+	_, edges, err := s.Scan(context.Background(), "testdata/gha/repo")
+	if err != nil {
+		t.Fatalf("Scan() error = %v", err)
+	}
+
+	consumerKey := "gha:.github/workflows/env.yml#release.publish"
+	consumerID := graph.NodeID(graph.NodeConsumer, consumerKey)
+
+	// Step-scoped env: STEP_KEY = secrets.STEP_SECRET, used via ${{ env.STEP_KEY }}.
+	stepSecretID := graph.NodeID(graph.NodeSecret, normalize.IdentityName("STEP_SECRET"))
+	if _, ok := ghaFindEdge(edges, consumerID, stepSecretID, graph.EdgeReferences); !ok {
+		t.Fatalf("expected references edge for env-indirect STEP_SECRET")
+	}
+
+	// Job-scoped env: JOB_KEY = secrets.JOB_SECRET, used via ${{ env.JOB_KEY }}.
+	jobSecretID := graph.NodeID(graph.NodeSecret, normalize.IdentityName("JOB_SECRET"))
+	if _, ok := ghaFindEdge(edges, consumerID, jobSecretID, graph.EdgeReferences); !ok {
+		t.Fatalf("expected references edge for env-indirect JOB_SECRET")
+	}
+
+	// Workflow-scoped env: GLOBAL_TOKEN = secrets.GLOBAL_SECRET, used via ${{ env.GLOBAL_TOKEN }}.
+	globalSecretID := graph.NodeID(graph.NodeSecret, normalize.IdentityName("GLOBAL_SECRET"))
+	if _, ok := ghaFindEdge(edges, consumerID, globalSecretID, graph.EdgeReferences); !ok {
+		t.Fatalf("expected references edge for env-indirect GLOBAL_SECRET")
+	}
+
+	// Provenance for indirect edges names the env key (one-hop evidence).
+	e, _ := ghaFindEdge(edges, consumerID, stepSecretID, graph.EdgeReferences)
+	if e.Provenance.RuleID != "gha-env-indirection" {
+		t.Fatalf("provenance.RuleID = %q, want %q", e.Provenance.RuleID, "gha-env-indirection")
+	}
+}
+
+func TestGHAScannerEnvIndirectionUnresolvedKeyNoEdge(t *testing.T) {
+	// Arrange
+	s := newGHAScanner()
+
+	// Act
+	_, edges, err := s.Scan(context.Background(), "testdata/gha/repo")
+	if err != nil {
+		t.Fatalf("Scan() error = %v", err)
+	}
+
+	// The "noenv" step uses ${{ env.UNDEFINED_KEY }} which maps to no secret -> no references edge.
+	noenvID := graph.NodeID(graph.NodeConsumer, "gha:.github/workflows/env.yml#release.noenv")
+	for _, e := range edges {
+		if e.Src == noenvID && e.Type == graph.EdgeReferences {
+			t.Fatalf("noenv step unexpectedly produced a references edge: %+v", e)
+		}
+	}
+}

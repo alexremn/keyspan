@@ -17,9 +17,10 @@ import (
 )
 
 const (
-	ghaSurface          = "gha"
-	ghaReferenceRuleID  = "gha-reference"
-	ghaWorkflowsRelpath = ".github/workflows"
+	ghaSurface           = "gha"
+	ghaReferenceRuleID   = "gha-reference"
+	ghaEnvIndirectRuleID = "gha-env-indirection"
+	ghaWorkflowsRelpath  = ".github/workflows"
 )
 
 // secretsExprRe matches a single `${{ secrets.NAME }}` expression and captures NAME.
@@ -116,14 +117,17 @@ func scanWorkflowFile(
 	}
 	var wf workflow
 	if err := yaml.Unmarshal(raw, &wf); err != nil {
-		// Tolerant: log file + error type only, never the raw record (it may carry a secret).
 		logSkip(relpath, 0, "yaml-parse")
 		return nil
 	}
 
+	// Workflow-level env: key -> secret name (only when value is exactly a secrets.* expr).
+	wfEnv := envSecretMap(wf.Env)
+
 	jobNames := sortedKeys(wf.Jobs)
 	for _, jobName := range jobNames {
 		job := wf.Jobs[jobName]
+		jobEnv := mergeEnv(wfEnv, envSecretMap(job.Env))
 		for idx, step := range job.Steps {
 			stepName := stepLabel(step, idx)
 			consumerKey := fmt.Sprintf("gha:%s#%s.%s", relpath, jobName, stepName)
@@ -135,9 +139,16 @@ func scanWorkflowFile(
 				Attrs: map[string]string{"surface": ghaSurface, "file": relpath, "job": jobName, "step": stepName},
 			})
 
-			secretNames := directSecretRefs(step)
-			for _, secretName := range secretNames {
-				emitSecretReference(consumerID, secretName, relpath, addNode, addEdge)
+			stepEnv := mergeEnv(jobEnv, envSecretMap(step.Env))
+
+			// Direct secrets.* references.
+			for _, secretName := range directSecretRefs(step) {
+				emitSecretReference(consumerID, secretName, relpath, ghaReferenceRuleID, addNode, addEdge)
+			}
+
+			// One-hop env indirection: env.KEY where KEY resolves to a secret.
+			for _, secretName := range envIndirectRefs(step, stepEnv) {
+				emitSecretReference(consumerID, secretName, relpath, ghaEnvIndirectRuleID, addNode, addEdge)
 			}
 		}
 	}
@@ -161,7 +172,7 @@ func directSecretRefs(step ghaStep) []string {
 }
 
 func emitSecretReference(
-	consumerID, secretRawName, relpath string,
+	consumerID, secretRawName, relpath, ruleID string,
 	addNode func(graph.Node),
 	addEdge func(graph.Edge),
 ) {
@@ -174,6 +185,12 @@ func emitSecretReference(
 		Attrs: map[string]string{},
 	})
 	edgeID := graph.EdgeID(consumerID, secretID, graph.EdgeReferences)
+	var evidence string
+	if ruleID == ghaEnvIndirectRuleID {
+		evidence = fmt.Sprintf("env key resolves to secrets.%s in %s", secretRawName, relpath)
+	} else {
+		evidence = fmt.Sprintf("secrets.%s referenced in %s", secretRawName, relpath)
+	}
 	addEdge(graph.Edge{
 		ID:         edgeID,
 		Src:        consumerID,
@@ -182,12 +199,57 @@ func emitSecretReference(
 		Direction:  graph.Directed,
 		Confidence: 1.0,
 		Provenance: graph.Provenance{
-			RuleID:        ghaReferenceRuleID,
-			Evidence:      []string{fmt.Sprintf("secrets.%s referenced in %s", secretRawName, relpath)},
+			RuleID:        ruleID,
+			Evidence:      []string{evidence},
 			Locations:     []graph.Location{{File: relpath, Surface: ghaSurface}},
 			MatchedTokens: []string{secretName},
 		},
 	})
+}
+
+// envSecretMap returns env-key -> secret-name for entries whose value is exactly
+// a single `${{ secrets.NAME }}` expression. Non-secret env values are ignored.
+func envSecretMap(env map[string]yaml.Node) map[string]string {
+	out := map[string]string{}
+	for k, v := range env {
+		text := scalarText(v)
+		m := secretsExprRe.FindStringSubmatch(text)
+		if m == nil {
+			continue
+		}
+		out[k] = m[1]
+	}
+	return out
+}
+
+// mergeEnv layers child env over parent env (child wins), returning a new map.
+func mergeEnv(parent, child map[string]string) map[string]string {
+	out := make(map[string]string, len(parent)+len(child))
+	for k, v := range parent {
+		out[k] = v
+	}
+	for k, v := range child {
+		out[k] = v
+	}
+	return out
+}
+
+// envIndirectRefs returns distinct secret names reached via one hop of `${{ env.KEY }}`
+// where KEY is bound (at step/job/workflow scope) to a secrets.* expression.
+func envIndirectRefs(step ghaStep, env map[string]string) []string {
+	found := map[string]bool{}
+	collect := func(text string) {
+		for _, m := range envExprRe.FindAllStringSubmatch(text, -1) {
+			if secretName, ok := env[m[1]]; ok {
+				found[secretName] = true
+			}
+		}
+	}
+	collect(step.Run)
+	for _, v := range step.With {
+		collect(scalarText(v))
+	}
+	return sortedSet(found)
 }
 
 // scalarText renders a yaml.Node value to a string for expression scanning.
