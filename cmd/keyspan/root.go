@@ -50,6 +50,7 @@ func newRootCmd() *cobra.Command {
 
 	root.AddCommand(newVersionCmd())
 	root.AddCommand(newIngestCmd())
+	root.AddCommand(newBlastRadiusCmd())
 
 	return root
 }
