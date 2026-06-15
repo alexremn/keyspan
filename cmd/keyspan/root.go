@@ -49,6 +49,7 @@ func newRootCmd() *cobra.Command {
 	pf.BoolVar(&flagFingerprintInline, "fingerprint-inline", false, "hash inline k8s Secret values for correlation")
 
 	root.AddCommand(newVersionCmd())
+	root.AddCommand(newIngestCmd())
 
 	return root
 }
