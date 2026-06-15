@@ -1,0 +1,4 @@
+# comment line, ignored
+*                      @org/platform
+.github/workflows/     @org/ci-team  ci-bot@example.com
+docs/                  @org/docs
