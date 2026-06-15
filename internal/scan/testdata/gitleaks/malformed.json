@@ -1,0 +1,16 @@
+[
+  {
+    "RuleID": "generic-api-key",
+    "File": "a.txt",
+    "StartLine": 1,
+    "Commit": "abc",
+    "Fingerprint": "abc:a.txt:generic-api-key:1"
+  },
+  {
+    "RuleID": "",
+    "File": "",
+    "StartLine": 0,
+    "Commit": "",
+    "Fingerprint": ""
+  }
+]
