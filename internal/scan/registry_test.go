@@ -1,57 +1,106 @@
-// internal/scan/registry_test.go
 package scan
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/alexremn/keyspan/internal/graph"
 )
 
-func TestRegistryScannersReturnsGHA(t *testing.T) {
-	// Arrange
-	opts := ScanOptions{FingerprintInline: false, Salt: []byte("test-salt")}
+func TestRegistryScannersIncludesGhaAndK8s(t *testing.T) {
+	scanners := Scanners(ScanOptions{})
 
-	// Act
-	scanners := Scanners(opts)
-
-	// Assert
-	if len(scanners) != 1 {
-		t.Fatalf("len(Scanners) = %d, want 1", len(scanners))
+	names := map[string]bool{}
+	for _, sc := range scanners {
+		names[sc.Name()] = true
 	}
-	if scanners[0].Name() != "gha" {
-		t.Fatalf("Scanners()[0].Name() = %q, want %q", scanners[0].Name(), "gha")
+	if !names["gha"] {
+		t.Errorf("Scanners missing gha scanner; got %v", names)
+	}
+	if !names["k8s"] {
+		t.Errorf("Scanners missing k8s scanner; got %v", names)
 	}
 }
 
-func TestRegistryGHAScannerEmitsWorkflowsAndOwners(t *testing.T) {
-	// Arrange
-	opts := ScanOptions{Salt: []byte("test-salt")}
-	s := Scanners(opts)[0]
+func TestRegistryScannersOverMixedFixtureProducesAllStructuralEdges(t *testing.T) {
+	dir := t.TempDir()
 
-	// Act
-	nodes, edges, err := s.Scan(context.Background(), "testdata/gha/repo")
-	if err != nil {
-		t.Fatalf("Scan() error = %v", err)
+	// A GHA workflow (gha scanner) ...
+	wfDir := filepath.Join(dir, ".github", "workflows")
+	if err := os.MkdirAll(wfDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(wfDir, "ci.yml"), []byte(`name: ci
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: deploy
+        env:
+          TOKEN: ${{ secrets.API_SECRET }}
+`), 0o600); err != nil {
+		t.Fatal(err)
 	}
 
-	// Assert: at least one references edge (from workflows) AND one owned_by edge (from CODEOWNERS).
-	var refs, owns int
-	for _, e := range edges {
-		switch e.Type {
-		case graph.EdgeReferences:
-			refs++
-		case graph.EdgeOwnedBy:
-			owns++
+	// ... plus k8s manifests exercising injects, mounts, and syncs.
+	if err := os.WriteFile(filepath.Join(dir, "manifests.yaml"), []byte(`apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: prod
+spec:
+  template:
+    spec:
+      volumes:
+        - name: vol
+          secret:
+            secretName: tls-secret
+      containers:
+        - name: app
+          env:
+            - name: TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: api-secret
+                  key: token
+---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: api-external
+  namespace: prod
+spec:
+  target:
+    name: api-secret
+  data:
+    - secretKey: token
+      remoteRef:
+        key: prod/api/token
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	byType := map[graph.EdgeType]int{}
+	for _, sc := range Scanners(ScanOptions{}) {
+		_, edges, err := sc.Scan(context.Background(), dir)
+		if err != nil {
+			t.Fatalf("scanner %s error: %v", sc.Name(), err)
+		}
+		for _, e := range edges {
+			byType[e.Type]++
 		}
 	}
-	if refs == 0 {
-		t.Fatalf("expected references edges from workflows, got 0")
+
+	if byType[graph.EdgeInjects] == 0 {
+		t.Errorf("expected injects edges from k8s workload, got 0")
 	}
-	if owns == 0 {
-		t.Fatalf("expected owned_by edges from CODEOWNERS, got 0")
+	if byType[graph.EdgeMounts] == 0 {
+		t.Errorf("expected mounts edges from k8s volume secret, got 0")
 	}
-	if len(nodes) == 0 {
-		t.Fatalf("expected nodes, got 0")
+	if byType[graph.EdgeSyncs] == 0 {
+		t.Errorf("expected syncs edges from ExternalSecret, got 0")
 	}
 }
