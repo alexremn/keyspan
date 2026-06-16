@@ -1,8 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
-// cmd/keyspan/main.go
-// SPDX-License-Identifier: Apache-2.0
-
 // Command keyspan is a secret blast-radius graph CLI.
 package main
 

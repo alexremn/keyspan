@@ -1,8 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
-// internal/graph/graph.go
-// SPDX-License-Identifier: Apache-2.0
-
 package graph
 
 // Graph is an in-memory node/edge store with adjacency indexes.

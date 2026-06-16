@@ -1,8 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
-// internal/store/store.go
-// SPDX-License-Identifier: Apache-2.0
-
 // Package store persists the keyspan graph to SQLite.
 package store
 

@@ -1,8 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
-// internal/scan/types.go
-// SPDX-License-Identifier: Apache-2.0
-
 package scan
 
 import (

@@ -1,8 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
-// internal/graph/band.go
-// SPDX-License-Identifier: Apache-2.0
-
 package graph
 
 // BandOf classifies a confidence into a half-open band:

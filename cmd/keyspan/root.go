@@ -1,8 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
-// cmd/keyspan/root.go
-// SPDX-License-Identifier: Apache-2.0
-
 package main
 
 import (

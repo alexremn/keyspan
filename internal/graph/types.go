@@ -1,8 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
-// internal/graph/types.go
-// SPDX-License-Identifier: Apache-2.0
-
 // Package graph defines keyspan's node/edge domain model and traversal.
 package graph
 

@@ -1,8 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
-// internal/normalize/normalize.go
-// SPDX-License-Identifier: Apache-2.0
-
 // Package normalize canonicalizes names and computes value fingerprints.
 package normalize
 

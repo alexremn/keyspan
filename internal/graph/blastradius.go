@@ -1,8 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
-// internal/graph/blastradius.go
-// SPDX-License-Identifier: Apache-2.0
-
 package graph
 
 import (
