@@ -33,7 +33,7 @@ func New(format string) (Renderer, error) {
 	case "dot":
 		return dotRenderer{}, nil
 	case "html":
-		return nil, fmt.Errorf("%q renderer not implemented", format)
+		return htmlRenderer{}, nil
 	default:
 		return nil, fmt.Errorf("unknown format %q", format)
 	}

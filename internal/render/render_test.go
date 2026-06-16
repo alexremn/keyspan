@@ -28,16 +28,10 @@ func TestRenderNewHumanSucceeds(t *testing.T) {
 	}
 }
 
-func TestRenderNewNotImplementedFormats(t *testing.T) {
-	// Arrange + Act + Assert: html exists but is not implemented in P6.
-	for _, format := range []string{"html"} {
-		_, err := New(format)
-		if err == nil {
-			t.Fatalf("New(%q) expected not-implemented error, got nil", format)
-		}
-		if !strings.Contains(err.Error(), "not implemented") {
-			t.Fatalf("New(%q) error = %q, want 'not implemented'", format, err.Error())
-		}
+func TestRenderNewHTMLSucceeds(t *testing.T) {
+	// html now implemented in P6.
+	if r, err := New("html"); err != nil || r == nil {
+		t.Fatalf("New(\"html\") should succeed after P6, got r=%v err=%v", r, err)
 	}
 }
 
