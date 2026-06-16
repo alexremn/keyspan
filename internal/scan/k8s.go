@@ -302,8 +302,125 @@ func (s *k8sScanner) scanSecret(doc map[string]any, rel string) ([]graph.Node, [
 	return []graph.Node{node}, nil
 }
 
+// secretNodeByStoreKey builds a Secret node keyed `store:<backend-key>` so an
+// AWS/Vault scanner can attach to the same identity in v1.1 (§5.3).
+func secretNodeByStoreKey(key string) (graph.Node, string) {
+	canonicalKey := "store:" + normalize.IdentityName(key)
+	id := graph.NodeID(graph.NodeSecret, canonicalKey)
+	return graph.Node{
+		ID:    id,
+		Type:  graph.NodeSecret,
+		Name:  key,
+		Attrs: map[string]string{"backend_key": key},
+	}, id
+}
+
 func (s *k8sScanner) scanExternalSecret(doc map[string]any, rel string) ([]graph.Node, []graph.Edge) {
-	return nil, nil
+	ns := metaNamespace(doc)
+	name := metaName(doc)
+	spec, _ := doc["spec"].(map[string]any)
+	if spec == nil {
+		return nil, nil
+	}
+	target, _ := spec["target"].(map[string]any)
+	targetName, _ := target["name"].(string)
+	if targetName == "" {
+		// No materialized Secret to pivot on; nothing structural to emit.
+		return nil, nil
+	}
+
+	remoteKeys := externalSecretRemoteKeys(spec)
+
+	canonicalKey := fmt.Sprintf("k8s:%s/ExternalSecret/%s", ns, name)
+	consumer := graph.Node{
+		ID:   graph.NodeID(graph.NodeConsumer, canonicalKey),
+		Type: graph.NodeConsumer,
+		Name: fmt.Sprintf("%s/ExternalSecret/%s", ns, name),
+		Attrs: map[string]string{
+			"surface":         "k8s",
+			"kind":            "ExternalSecret",
+			"namespace":       ns,
+			"target":          targetName,
+			"remote_ref_keys": strings.Join(remoteKeys, ","),
+		},
+	}
+
+	// Pivot: the materialized k8s Secret, keyed by target.name — the SAME key a
+	// workload's injects/mounts edge resolves to (§6 reference-chain).
+	pivot, pivotID := secretNodeByName(targetName)
+	loc := graph.Location{File: rel, Surface: "k8s"}
+	syncEdge := graph.Edge{
+		ID:         graph.EdgeID(consumer.ID, pivotID, graph.EdgeSyncs),
+		Src:        consumer.ID,
+		Dst:        pivotID,
+		Type:       graph.EdgeSyncs,
+		Direction:  graph.Directed,
+		Confidence: 1.0,
+		Provenance: graph.Provenance{
+			RuleID:        string(graph.EdgeSyncs),
+			Evidence:      []string{"spec.target.name"},
+			Locations:     []graph.Location{loc},
+			MatchedTokens: []string{targetName},
+		},
+	}
+
+	nodes := []graph.Node{consumer, pivot}
+	edges := []graph.Edge{syncEdge}
+
+	// Store-keyed backend node per remoteRef key + a references edge
+	// ExternalSecret -> store:<key>. This edge is what the reference-chain rule
+	// (§6) pivots on: store:<key> <-references- ExternalSecret -syncs-> pivot k8s
+	// Secret <-injects/mounts- workload. Without it the 0.90 rule is dead against
+	// real scan output (it would only fire on hand-built test graphs).
+	for _, k := range remoteKeys {
+		sn, snID := secretNodeByStoreKey(k)
+		nodes = append(nodes, sn)
+		edges = append(edges, graph.Edge{
+			ID:         graph.EdgeID(consumer.ID, snID, graph.EdgeReferences),
+			Src:        consumer.ID,
+			Dst:        snID,
+			Type:       graph.EdgeReferences,
+			Direction:  graph.Directed,
+			Confidence: 1.0,
+			Provenance: graph.Provenance{
+				RuleID:        string(graph.EdgeReferences),
+				Evidence:      []string{"spec.data[].remoteRef.key"},
+				Locations:     []graph.Location{loc},
+				MatchedTokens: []string{k},
+			},
+		})
+	}
+
+	return nodes, edges
+}
+
+// externalSecretRemoteKeys collects backend keys from spec.data[].remoteRef.key
+// and spec.dataFrom[].extract.key / spec.dataFrom[].find (best-effort).
+func externalSecretRemoteKeys(spec map[string]any) []string {
+	var out []string
+	data, _ := spec["data"].([]any)
+	for _, d := range data {
+		dm, ok := d.(map[string]any)
+		if !ok {
+			continue
+		}
+		ref, _ := dm["remoteRef"].(map[string]any)
+		if k, _ := ref["key"].(string); k != "" {
+			out = append(out, k)
+		}
+	}
+	dataFrom, _ := spec["dataFrom"].([]any)
+	for _, d := range dataFrom {
+		dm, ok := d.(map[string]any)
+		if !ok {
+			continue
+		}
+		ext, _ := dm["extract"].(map[string]any)
+		if k, _ := ext["key"].(string); k != "" {
+			out = append(out, k)
+		}
+	}
+	return out
 }
 
 func (s *k8sScanner) scanNamespace(doc map[string]any) ([]graph.Node, []graph.Edge) {

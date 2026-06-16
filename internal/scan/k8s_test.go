@@ -99,6 +99,69 @@ spec:
 	}
 }
 
+func TestK8sScannerExternalSecretSyncsPivotAndStoreKey(t *testing.T) {
+	dir := t.TempDir()
+	writeK8sFile(t, dir, "es.yaml", `apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: api-external
+  namespace: prod
+spec:
+  target:
+    name: api-secret
+  data:
+    - secretKey: token
+      remoteRef:
+        key: prod/api/token
+`)
+
+	s := newK8sScanner(ScanOptions{})
+	nodes, edges, err := s.Scan(context.Background(), dir)
+	if err != nil {
+		t.Fatalf("Scan error: %v", err)
+	}
+
+	// Exactly one syncs edge: ExternalSecret Consumer → materialized k8s Secret.
+	var syncs []graph.Edge
+	for _, e := range edges {
+		if e.Type == graph.EdgeSyncs {
+			syncs = append(syncs, e)
+		}
+	}
+	if len(syncs) != 1 {
+		t.Fatalf("expected 1 syncs edge, got %d", len(syncs))
+	}
+	if syncs[0].Direction != graph.Directed || syncs[0].Confidence != 1.0 {
+		t.Errorf("syncs edge direction/conf = %v/%v, want directed/1.0", syncs[0].Direction, syncs[0].Confidence)
+	}
+
+	// The pivot Secret node is keyed by the target k8s secret name (api-secret),
+	// matching what a workload's injects edge would point at (§6 reference-chain).
+	_, pivotID := secretNodeByName("api-secret")
+	if syncs[0].Dst != pivotID {
+		t.Errorf("syncs dst = %q, want pivot api-secret %q", syncs[0].Dst, pivotID)
+	}
+
+	// A store-keyed Secret node (store:<remoteRef.key>) exists for v1.1 backend
+	// attachment, and the ExternalSecret consumer carries the remoteRef key attr.
+	_, storeID := secretNodeByStoreKey("prod/api/token")
+	var foundStore, foundConsumerAttr bool
+	for _, n := range nodes {
+		if n.ID == storeID && n.Type == graph.NodeSecret {
+			foundStore = true
+		}
+		if n.Type == graph.NodeConsumer && n.Attrs["remote_ref_keys"] == "prod/api/token" {
+			foundConsumerAttr = true
+		}
+	}
+	if !foundStore {
+		t.Errorf("missing store-keyed Secret node for remoteRef key prod/api/token")
+	}
+	if !foundConsumerAttr {
+		t.Errorf("ExternalSecret consumer missing remote_ref_keys attr")
+	}
+}
+
 func TestK8sScannerDecodesAllMultiDocDocuments(t *testing.T) {
 	dir := t.TempDir()
 	// Three documents separated by --- in one file. A single yaml.Unmarshal would
