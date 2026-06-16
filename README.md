@@ -44,13 +44,21 @@ Full walkthrough: [examples/README.md](examples/README.md).
 ## Sample output
 
 ```text
-secret: DATABASE_PASSWORD
-  consumers (3):
-    [HIGH] gha ci.yml#build.migrate
-    [HIGH] k8s prod/Deployment/api#api (injects)
-    [HIGH] eso prod/db-credentials (syncs)
-  owners: @keyspan-demo/platform, @keyspan-demo/sre
+DATABASE_PASSWORD
+  identity cluster: 3 correlated secrets
+  ├─ gha:.github/workflows/ci.yml#build.migrate  [high 1.00]
+  │    references — gha-reference — secrets.DATABASE_PASSWORD referenced in .github/workflows/ci.yml
+  ├─ prod/Deployment/api [api]  [low 0.55]
+  │    injects — injects — secretKeyRef
+  │    owners: prod
+  ├─ prod/ExternalSecret/db-credentials  [low 0.55]
+  │    references — references — spec.data[].remoteRef.key
+  │    owners: prod
 ```
+
+v1.0 ownership surfaces **Kubernetes namespace** owners (e.g. `prod`) reachable
+via `owned_by` edges from consumer nodes. CODEOWNERS team/path ownership
+attribution is a v1.1 roadmap item and is not included in the output above.
 
 Committed samples for all formats live in
 [examples/outputs/](examples/outputs/) (`blast-radius.txt`, `.json`, `.html`).

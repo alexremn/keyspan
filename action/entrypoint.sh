@@ -64,11 +64,11 @@ while IFS= read -r f; do
   while IFS= read -r n; do
     [ -n "$n" ] && touched_secrets+="$n"$'\n'
   done < <(grep -hA1 -E 'secretKeyRef:|secretRef:' "$f" 2>/dev/null \
-            | grep -oE 'name:[[:space:]]*[A-Za-z0-9_.-]+' | awk '{print $2}' || true)
-  # k8s: volumes[].secret.secretName
+            | grep -oE 'name:[[:space:]]*[A-Za-z0-9_-]+' | awk '{print $2}' || true)
+  # k8s: volumes[].secret.secretName (hyphen included for names like database-password)
   while IFS= read -r n; do
     [ -n "$n" ] && touched_secrets+="$n"$'\n'
-  done < <(grep -oE 'secretName:[[:space:]]*[A-Za-z0-9_.-]+' "$f" 2>/dev/null | awk '{print $2}' || true)
+  done < <(grep -oE 'secretName:[[:space:]]*[A-Za-z0-9_-]+' "$f" 2>/dev/null | awk '{print $2}' || true)
 done <<< "$changed_files"
 
 # Dedup + lowercase to match keyspan's canonical names.

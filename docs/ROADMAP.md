@@ -6,6 +6,9 @@ GitHub Action. Everything below is post-v1.0.
 
 ## v1.1 — close the cloud gap
 
+- **CODEOWNERS team/path ownership attribution**: surface CODEOWNERS team owners
+  and path-pattern ownership in the blast-radius output. v1.0 surfaces Kubernetes
+  namespace ownership only; CODEOWNERS ownership is deferred to v1.1.
 - **AWS IAM + Secrets Manager scanner** (the long pole): join an ESO
   `remoteRef` backend key to the real AWS secret; **AKIA** access-key-ID and ARN
   identity joins.

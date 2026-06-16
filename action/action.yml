@@ -25,7 +25,7 @@ inputs:
     required: false
     default: "0.50"
   report:
-    description: Optional gitleaks/trufflehog findings JSON to ingest as entry points.
+    description: Optional gitleaks findings JSON to ingest as graph entry points. Expects the gitleaks JSON report format. TruffleHog support is planned for v1.1.
     required: false
     default: ""
   reveal-names:

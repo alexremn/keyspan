@@ -56,6 +56,15 @@ func (h *humanRenderer) writeConsumer(w io.Writer, c graph.ConsumerHit, opts Opt
 			return err
 		}
 	}
+	if len(c.Owners) > 0 {
+		names := make([]string, 0, len(c.Owners))
+		for _, o := range c.Owners {
+			names = append(names, o.Name)
+		}
+		if _, err := fmt.Fprintf(w, "  │    owners: %s\n", strings.Join(names, ", ")); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

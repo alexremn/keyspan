@@ -92,3 +92,65 @@ func TestHumanRenderShowsLocationsWhenRequested(t *testing.T) {
 		t.Fatalf("expected File:Line when IncludeLocations set:\n%s", out)
 	}
 }
+
+func humanFixtureResultWithOwners() graph.QueryResult {
+	start := graph.Node{ID: "s1", Type: graph.NodeSecret, Name: "AWS_ACCESS_KEY_ID"}
+	consumer := graph.Node{ID: "c1", Type: graph.NodeConsumer, Name: "gha:ci.yml#build.deploy"}
+	chain := []graph.Edge{{
+		Type:       graph.EdgeReferences,
+		Confidence: 1.0,
+		Provenance: graph.Provenance{
+			RuleID:   "references",
+			Evidence: []string{"workflow references secrets.AWS_ACCESS_KEY_ID"},
+		},
+	}}
+	owners := []graph.Node{
+		{ID: "o1", Type: graph.NodeOwner, Name: "prod"},
+		{ID: "o2", Type: graph.NodeOwner, Name: "staging"},
+	}
+	return graph.QueryResult{
+		Start:   start,
+		Cluster: []graph.Node{start},
+		Consumers: []graph.ConsumerHit{{
+			Node:       consumer,
+			Confidence: 1.0,
+			Band:       graph.BandHigh,
+			Chain:      chain,
+			Owners:     owners,
+		}},
+	}
+}
+
+func TestHumanRenderShowsOwnersWhenPresent(t *testing.T) {
+	// Arrange
+	r := &humanRenderer{}
+	var buf bytes.Buffer
+
+	// Act
+	if err := r.Render(&buf, humanFixtureResultWithOwners(), Options{}); err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+
+	// Assert
+	out := buf.String()
+	if !strings.Contains(out, "owners: prod, staging") {
+		t.Fatalf("expected 'owners: prod, staging' line in output:\n%s", out)
+	}
+}
+
+func TestHumanRenderOmitsOwnersLineWhenEmpty(t *testing.T) {
+	// Arrange: fixture has no Owners
+	r := &humanRenderer{}
+	var buf bytes.Buffer
+
+	// Act
+	if err := r.Render(&buf, humanFixtureResult(), Options{}); err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+
+	// Assert
+	out := buf.String()
+	if strings.Contains(out, "owners:") {
+		t.Fatalf("expected no owners line when Owners is empty:\n%s", out)
+	}
+}

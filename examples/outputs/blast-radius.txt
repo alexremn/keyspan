@@ -4,5 +4,7 @@ DATABASE_PASSWORD
   │    references — gha-reference — secrets.DATABASE_PASSWORD referenced in .github/workflows/ci.yml
   ├─ prod/Deployment/api [api]  [low 0.55]
   │    injects — injects — secretKeyRef
+  │    owners: prod
   ├─ prod/ExternalSecret/db-credentials  [low 0.55]
   │    references — references — spec.data[].remoteRef.key
+  │    owners: prod
