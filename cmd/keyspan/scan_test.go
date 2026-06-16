@@ -34,6 +34,7 @@ func TestScanCommandPopulatesGraph(t *testing.T) {
 	// Arrange
 	repo := writeScanFixtureRepo(t)
 	dbPath := filepath.Join(t.TempDir(), "keyspan.db")
+	t.Cleanup(func() { flagDB = "./keyspan.db" }) // restore global after --db flag mutates it
 
 	root := newRootCmd()
 	buf := &bytes.Buffer{}

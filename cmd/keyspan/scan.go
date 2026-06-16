@@ -4,10 +4,11 @@ package main
 import (
 	"fmt"
 
+	"github.com/spf13/cobra"
+
+	"github.com/alexremn/keyspan/internal/correlate"
 	"github.com/alexremn/keyspan/internal/scan"
 	"github.com/alexremn/keyspan/internal/store"
-
-	"github.com/spf13/cobra"
 )
 
 func newScanCmd() *cobra.Command {
@@ -21,42 +22,50 @@ func newScanCmd() *cobra.Command {
 	}
 }
 
-// runScan opens the store, runs every active scanner over each root, and upserts the
-// emitted nodes/edges under a single run. Signature is FIXED per CLI architecture.
+// runScan opens the store, runs every active scanner over each root, upserts the
+// emitted nodes/edges under a single run, then correlates and persists edges.
+// Signature is FIXED per CLI architecture.
 func runScan(cmd *cobra.Command, roots []string) error {
-	st, err := store.Open(flagDB)
+	s, err := store.Open(flagDB)
 	if err != nil {
 		return fmt.Errorf("open store: %w", err)
 	}
-	defer st.Close()
+	defer s.Close()
 
-	runID, err := st.BeginRun("scan", roots)
+	runID, err := s.BeginRun("scan", roots)
 	if err != nil {
 		return fmt.Errorf("begin run: %w", err)
 	}
 
-	opts := scan.ScanOptions{Salt: st.Salt(), FingerprintInline: flagFingerprintInline}
-	scanners := scan.Scanners(opts)
-
-	for _, root := range roots {
-		for _, sc := range scanners {
-			nodes, edges, err := sc.Scan(cmd.Context(), root)
+	opts := scan.ScanOptions{Salt: s.Salt(), FingerprintInline: flagFingerprintInline}
+	for _, scanner := range scan.Scanners(opts) {
+		for _, root := range roots {
+			nodes, edges, err := scanner.Scan(cmd.Context(), root)
 			if err != nil {
-				return fmt.Errorf("scanner %s on %s: %w", sc.Name(), root, err)
+				return fmt.Errorf("%s scan %q: %w", scanner.Name(), root, err)
 			}
 			for _, n := range nodes {
-				if err := st.UpsertNode(runID, n); err != nil {
+				if err := s.UpsertNode(runID, n); err != nil {
 					return fmt.Errorf("upsert node: %w", err)
 				}
 			}
 			for _, e := range edges {
-				if err := st.UpsertEdge(runID, e); err != nil {
+				if err := s.UpsertEdge(runID, e); err != nil {
 					return fmt.Errorf("upsert edge: %w", err)
 				}
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "scanned %s with %s: %d nodes, %d edges\n",
-				root, sc.Name(), len(nodes), len(edges))
 		}
 	}
+
+	g, err := s.LoadGraph()
+	if err != nil {
+		return fmt.Errorf("load graph: %w", err)
+	}
+	corr := correlate.Correlate(g, correlate.Options{AggressiveNames: flagAggressiveNames})
+	if err := s.ReplaceCorrelations(runID, corr); err != nil {
+		return fmt.Errorf("replace correlations: %w", err)
+	}
+
+	fmt.Fprintf(cmd.OutOrStdout(), "scanned %d root(s); %d correlates edges\n", len(roots), len(corr))
 	return nil
 }

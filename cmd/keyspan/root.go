@@ -19,14 +19,16 @@ const (
 )
 
 // Package-level global flag vars, bound on PersistentFlags in newRootCmd.
+// Defaults are set here so tests that pre-set a var before calling newRootCmd()
+// retain their value (pflag uses the current value as the flag default).
 var (
-	flagDB               string
-	flagMinConfidence    float64
-	flagFormat           string
-	flagOut              string
-	flagIncludeLocations bool
-	flagAggressiveNames  bool
-	flagFingerprintInline bool
+	flagDB               = "./keyspan.db"
+	flagMinConfidence    = 0.50
+	flagFormat           = "human"
+	flagOut              = ""
+	flagIncludeLocations = false
+	flagAggressiveNames  = false
+	flagFingerprintInline = false
 )
 
 // newRootCmd builds the keyspan root command and registers subcommands.
@@ -40,18 +42,19 @@ func newRootCmd() *cobra.Command {
 	}
 
 	pf := root.PersistentFlags()
-	pf.StringVar(&flagDB, "db", "./keyspan.db", "path to the keyspan SQLite DB")
-	pf.Float64Var(&flagMinConfidence, "min-confidence", 0.50, "minimum edge confidence (inclusive)")
-	pf.StringVar(&flagFormat, "format", "human", "output format: human|json|dot|html")
-	pf.StringVar(&flagOut, "out", "", "write output to FILE instead of stdout")
-	pf.BoolVar(&flagIncludeLocations, "include-locations", false, "include File:Line locations in output")
-	pf.BoolVar(&flagAggressiveNames, "aggressive-names", false, "strip enumerated name prefixes/suffixes in name-match")
-	pf.BoolVar(&flagFingerprintInline, "fingerprint-inline", false, "hash inline k8s Secret values for correlation")
+	pf.StringVar(&flagDB, "db", flagDB, "path to the keyspan SQLite DB")
+	pf.Float64Var(&flagMinConfidence, "min-confidence", flagMinConfidence, "minimum edge confidence (inclusive)")
+	pf.StringVar(&flagFormat, "format", flagFormat, "output format: human|json|dot|html")
+	pf.StringVar(&flagOut, "out", flagOut, "write output to FILE instead of stdout")
+	pf.BoolVar(&flagIncludeLocations, "include-locations", flagIncludeLocations, "include File:Line locations in output")
+	pf.BoolVar(&flagAggressiveNames, "aggressive-names", flagAggressiveNames, "strip enumerated name prefixes/suffixes in name-match")
+	pf.BoolVar(&flagFingerprintInline, "fingerprint-inline", flagFingerprintInline, "hash inline k8s Secret values for correlation")
 
 	root.AddCommand(newVersionCmd())
 	root.AddCommand(newIngestCmd())
 	root.AddCommand(newBlastRadiusCmd())
 	root.AddCommand(newScanCmd())
+	root.AddCommand(newRecorrelateCmd())
 
 	return root
 }
