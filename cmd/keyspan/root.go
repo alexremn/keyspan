@@ -55,6 +55,7 @@ func newRootCmd() *cobra.Command {
 	root.AddCommand(newBlastRadiusCmd())
 	root.AddCommand(newScanCmd())
 	root.AddCommand(newRecorrelateCmd())
+	root.AddCommand(newExportCmd())
 
 	return root
 }

@@ -82,7 +82,7 @@ func newBlastRadiusCmd() *cobra.Command {
 
 			opts := render.Options{
 				IncludeLocations: flagIncludeLocations,
-				Color:            flagFormat == "human" && flagOut == "" && isTTY(os.Stdout),
+				Color:            isTTY(os.Stdout),
 			}
 			return renderer.Render(w, result, opts)
 		},
