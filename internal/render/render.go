@@ -29,7 +29,7 @@ func New(format string) (Renderer, error) {
 	case "human":
 		return &humanRenderer{}, nil
 	case "json":
-		return nil, fmt.Errorf("%q renderer not implemented", format)
+		return jsonRenderer{}, nil
 	case "dot":
 		return nil, fmt.Errorf("%q renderer not implemented", format)
 	case "html":

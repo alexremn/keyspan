@@ -29,8 +29,8 @@ func TestRenderNewHumanSucceeds(t *testing.T) {
 }
 
 func TestRenderNewNotImplementedFormats(t *testing.T) {
-	// Arrange + Act + Assert: json/dot/html exist but are not implemented in P2.
-	for _, format := range []string{"json", "dot", "html"} {
+	// Arrange + Act + Assert: dot/html exist but are not implemented in P2.
+	for _, format := range []string{"dot", "html"} {
 		_, err := New(format)
 		if err == nil {
 			t.Fatalf("New(%q) expected not-implemented error, got nil", format)
@@ -38,6 +38,13 @@ func TestRenderNewNotImplementedFormats(t *testing.T) {
 		if !strings.Contains(err.Error(), "not implemented") {
 			t.Fatalf("New(%q) error = %q, want 'not implemented'", format, err.Error())
 		}
+	}
+}
+
+func TestRenderNewJSONSucceeds(t *testing.T) {
+	// json now implemented in P6.
+	if r, err := New("json"); err != nil || r == nil {
+		t.Fatalf("New(\"json\") should succeed after P6, got r=%v err=%v", r, err)
 	}
 }
 
