@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/alexremn/keyspan/internal/graph"
-	_ "modernc.org/sqlite"
+	_ "modernc.org/sqlite" // modernc.org/sqlite: registers the database/sql "sqlite" driver
 )
 
 //go:embed schema.sql

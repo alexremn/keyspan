@@ -1,7 +1,6 @@
+version: "2"
 run:
-  timeout: 5m
   tests: true
-
 linters:
   enable:
     - errcheck
@@ -9,17 +8,42 @@ linters:
     - ineffassign
     - staticcheck
     - unused
-    - gofmt
-    - goimports
-    - misspell
+    - gosec
     - revive
     - bodyclose
-    - gosec
-
+    - misspell
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - gosec
+        path: _test\.go
+      # scan.ScanOptions is intentionally named with the package prefix in its type
+      # name — the name is part of the stable public API contract and is used
+      # throughout the codebase and in documentation. The revive exported-stutter
+      # lint opinion is overridden here to preserve that contract.
+      - linters:
+          - revive
+        text: "type name will be used as scan.ScanOptions by other packages, and that stutters"
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 issues:
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - gosec
   max-issues-per-linter: 0
   max-same-issues: 0
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

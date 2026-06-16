@@ -328,7 +328,7 @@ func imagePullSecrets(spec map[string]any) []string {
 	return out
 }
 
-func (s *k8sScanner) scanSecret(doc map[string]any, rel string) ([]graph.Node, []graph.Edge) {
+func (s *k8sScanner) scanSecret(doc map[string]any, _ string) ([]graph.Node, []graph.Edge) {
 	name := metaName(doc)
 	if name == "" {
 		return nil, nil

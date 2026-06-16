@@ -55,10 +55,10 @@ func TestExample73WorkflowUsesActionWithSafeDefaults(t *testing.T) {
 	var withReveal string
 	for _, job := range wf.Jobs {
 		for _, step := range job.Steps {
-			switch {
-			case step.Uses == "actions/checkout@v4":
+			switch step.Uses {
+			case "actions/checkout@v4":
 				sawCheckout = true
-			case step.Uses == "alexremn/keyspan/action@v1":
+			case "alexremn/keyspan/action@v1":
 				sawAction = true
 				withReveal = step.With["reveal-names"]
 			}

@@ -102,7 +102,7 @@ func (htmlRenderer) Render(w io.Writer, r graph.QueryResult, opts Options) error
 
 	payload := base64.StdEncoding.EncodeToString(compact.Bytes())
 	return htmlTemplate.Execute(w, htmlData{
-		Cytoscape:  template.JS(cytoscapeJS),
-		PayloadB64: template.JS(payload),
+		Cytoscape:  template.JS(cytoscapeJS), //nolint:gosec // G203: trusted vendored Cytoscape.js bundle (pinned v3.34.0, embedded at build time, not attacker-controlled)
+		PayloadB64: template.JS(payload),     //nolint:gosec // G203: base64 alphabet has no HTML metacharacters; placed in non-executable application/json script block
 	})
 }

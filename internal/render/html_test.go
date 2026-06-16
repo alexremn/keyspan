@@ -27,7 +27,7 @@ func TestRenderHTMLEmbedsCytoscapeAndBase64Data(t *testing.T) {
 
 	// Data injected as base64 in an application/json script block, read via atob.
 	if !strings.Contains(out, `<script type="application/json" id="keyspan-data">`) {
-		t.Fatalf("expected application/json data block, got:\n%s", out[:min(len(out), 800)])
+		t.Fatalf("expected application/json data block, got:\n%s", out[:minInt(len(out), 800)])
 	}
 	if !strings.Contains(out, "atob(") || !strings.Contains(out, "JSON.parse(") {
 		t.Fatalf("expected atob+JSON.parse decode path")
@@ -88,7 +88,7 @@ func TestRenderHTMLScriptBreakoutIsNeutralized(t *testing.T) {
 	}
 }
 
-func min(a, b int) int {
+func minInt(a, b int) int {
 	if a < b {
 		return a
 	}
