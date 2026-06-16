@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // internal/correlate/refchain_test.go
 package correlate
 

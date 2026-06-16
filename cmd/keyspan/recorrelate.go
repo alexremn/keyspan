@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // cmd/keyspan/recorrelate.go
 package main
 

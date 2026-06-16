@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // cmd/keyspan/root.go
 // SPDX-License-Identifier: Apache-2.0
 
@@ -22,12 +24,12 @@ const (
 // Defaults are set here so tests that pre-set a var before calling newRootCmd()
 // retain their value (pflag uses the current value as the flag default).
 var (
-	flagDB               = "./keyspan.db"
-	flagMinConfidence    = 0.50
-	flagFormat           = "human"
-	flagOut              = ""
-	flagIncludeLocations = false
-	flagAggressiveNames  = false
+	flagDB                = "./keyspan.db"
+	flagMinConfidence     = 0.50
+	flagFormat            = "human"
+	flagOut               = ""
+	flagIncludeLocations  = false
+	flagAggressiveNames   = false
 	flagFingerprintInline = false
 )
 

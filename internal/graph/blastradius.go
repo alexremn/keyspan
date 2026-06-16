@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // internal/graph/blastradius.go
 // SPDX-License-Identifier: Apache-2.0
 
@@ -88,10 +90,10 @@ type pathItem struct {
 // maxHeap orders by bottleneck descending (widest path first).
 type maxHeap []*pathItem
 
-func (h maxHeap) Len() int            { return len(h) }
-func (h maxHeap) Less(i, j int) bool  { return h[i].bottleneck > h[j].bottleneck }
-func (h maxHeap) Swap(i, j int)       { h[i], h[j] = h[j], h[i]; h[i].index = i; h[j].index = j }
-func (h *maxHeap) Push(x any)         { it := x.(*pathItem); it.index = len(*h); *h = append(*h, it) }
+func (h maxHeap) Len() int           { return len(h) }
+func (h maxHeap) Less(i, j int) bool { return h[i].bottleneck > h[j].bottleneck }
+func (h maxHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i]; h[i].index = i; h[j].index = j }
+func (h *maxHeap) Push(x any)        { it := x.(*pathItem); it.index = len(*h); *h = append(*h, it) }
 func (h *maxHeap) Pop() any {
 	old := *h
 	n := len(old)

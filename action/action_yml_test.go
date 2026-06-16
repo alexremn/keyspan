@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // action/action_yml_test.go
 package action_test
 
@@ -48,10 +50,10 @@ func TestAction71ManifestIsCompositeWithRequiredInputs(t *testing.T) {
 
 	// Assert: every documented input exists with the spec'd defaults.
 	wantInputs := map[string]string{
-		"path":              "",      // no default; required-ish, defaulted to "."
-		"db":                "",      // checked below explicitly
+		"path":              "", // no default; required-ish, defaulted to "."
+		"db":                "", // checked below explicitly
 		"min-confidence":    "0.50",
-		"report":            "",      // optional findings file
+		"report":            "", // optional findings file
 		"reveal-names":      "false",
 		"include-locations": "false",
 	}

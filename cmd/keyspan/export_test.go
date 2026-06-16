@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package main
 
 import (
@@ -66,7 +68,13 @@ func exportSeedDB(t *testing.T, path string) string {
 }
 
 func TestExportCommandAllFormatsToStdout(t *testing.T) {
-	t.Cleanup(func() { flagDB = "./keyspan.db"; flagFormat = "human"; flagOut = ""; flagIncludeLocations = false; flagExportRef = "" })
+	t.Cleanup(func() {
+		flagDB = "./keyspan.db"
+		flagFormat = "human"
+		flagOut = ""
+		flagIncludeLocations = false
+		flagExportRef = ""
+	})
 	dir := t.TempDir()
 	dbPath := filepath.Join(dir, "keyspan.db")
 	ref := exportSeedDB(t, dbPath)
@@ -82,7 +90,13 @@ func TestExportCommandAllFormatsToStdout(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.format, func(t *testing.T) {
-			t.Cleanup(func() { flagDB = "./keyspan.db"; flagFormat = "human"; flagOut = ""; flagIncludeLocations = false; flagExportRef = "" })
+			t.Cleanup(func() {
+				flagDB = "./keyspan.db"
+				flagFormat = "human"
+				flagOut = ""
+				flagIncludeLocations = false
+				flagExportRef = ""
+			})
 			var buf bytes.Buffer
 			root := newRootCmd()
 			root.SetOut(&buf)
@@ -99,7 +113,13 @@ func TestExportCommandAllFormatsToStdout(t *testing.T) {
 }
 
 func TestExportCommandRedactsLocationsByDefault(t *testing.T) {
-	t.Cleanup(func() { flagDB = "./keyspan.db"; flagFormat = "human"; flagOut = ""; flagIncludeLocations = false; flagExportRef = "" })
+	t.Cleanup(func() {
+		flagDB = "./keyspan.db"
+		flagFormat = "human"
+		flagOut = ""
+		flagIncludeLocations = false
+		flagExportRef = ""
+	})
 	dir := t.TempDir()
 	dbPath := filepath.Join(dir, "keyspan.db")
 	ref := exportSeedDB(t, dbPath)
@@ -135,7 +155,13 @@ func TestExportCommandRedactsLocationsByDefault(t *testing.T) {
 }
 
 func TestExportCommandWritesToOutFile(t *testing.T) {
-	t.Cleanup(func() { flagDB = "./keyspan.db"; flagFormat = "human"; flagOut = ""; flagIncludeLocations = false; flagExportRef = "" })
+	t.Cleanup(func() {
+		flagDB = "./keyspan.db"
+		flagFormat = "human"
+		flagOut = ""
+		flagIncludeLocations = false
+		flagExportRef = ""
+	})
 	dir := t.TempDir()
 	dbPath := filepath.Join(dir, "keyspan.db")
 	ref := exportSeedDB(t, dbPath)

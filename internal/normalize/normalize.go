@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // internal/normalize/normalize.go
 // SPDX-License-Identifier: Apache-2.0
 

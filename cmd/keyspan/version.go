@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // cmd/keyspan/version.go
 // SPDX-License-Identifier: Apache-2.0
 

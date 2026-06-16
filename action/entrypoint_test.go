@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // action/entrypoint_test.go
 package action_test
 

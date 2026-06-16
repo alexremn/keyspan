@@ -4,9 +4,9 @@ package render
 
 import (
 	"bytes"
+	_ "embed"
 	"encoding/base64"
 	"encoding/json"
-	_ "embed"
 	"html/template"
 	"io"
 

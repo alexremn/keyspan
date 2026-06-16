@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // internal/normalize/normalize_test.go
 package normalize
 
@@ -44,11 +46,11 @@ func TestNormalizeNameGradeAggressiveStripsAffixes(t *testing.T) {
 	cases := []struct {
 		in, want string
 	}{
-		{"prod_db_password", "dbpassword"},    // prod_ prefix stripped
-		{"staging_api_token", "api"},          // staging_ prefix + _token suffix
-		{"dev_session_key", "session"},        // dev_ prefix + _key suffix
-		{"user_id", "user"},                   // _id suffix
-		{"client_secret", "client"},           // _secret suffix
+		{"prod_db_password", "dbpassword"}, // prod_ prefix stripped
+		{"staging_api_token", "api"},       // staging_ prefix + _token suffix
+		{"dev_session_key", "session"},     // dev_ prefix + _key suffix
+		{"user_id", "user"},                // _id suffix
+		{"client_secret", "client"},        // _secret suffix
 	}
 	for _, tc := range cases {
 		if got := NameGrade(tc.in, true); got != tc.want {
