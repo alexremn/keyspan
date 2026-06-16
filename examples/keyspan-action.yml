@@ -1,0 +1,34 @@
+# examples/keyspan-action.yml
+# Copy this into .github/workflows/ in your own repo to comment a masked
+# secret blast-radius map on every pull request.
+#
+# ```yaml
+name: keyspan blast radius
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+      - "**/*.yml"
+      - "**/*.yaml"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  blast-radius:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so the PR diff can be computed
+
+      - name: keyspan blast radius (masked by default)
+        uses: alexremn/keyspan/action@v1
+        with:
+          path: "."
+          min-confidence: "0.50"
+          # report: gitleaks.json   # optional: ingest detection findings first
+          # reveal-names: "false"   # masked by default; opt in on private repos
+          # include-locations: "false"
+# ```
