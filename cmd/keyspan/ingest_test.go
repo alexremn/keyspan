@@ -8,6 +8,7 @@ import (
 
 func TestCmdIngestGitleaksPopulatesDB(t *testing.T) {
 	// Arrange
+	t.Cleanup(func() { flagDB = "./keyspan.db" }) // restore global after --db flag mutates it
 	dir := t.TempDir()
 	dbPath := filepath.Join(dir, "keyspan.db")
 	root := newRootCmd()
@@ -34,6 +35,7 @@ func TestCmdIngestGitleaksPopulatesDB(t *testing.T) {
 
 func TestCmdIngestUnknownToolUsageError(t *testing.T) {
 	// Arrange
+	t.Cleanup(func() { flagDB = "./keyspan.db" }) // restore global after --db flag mutates it
 	dir := t.TempDir()
 	root := newRootCmd()
 	root.SetOut(&bytes.Buffer{})

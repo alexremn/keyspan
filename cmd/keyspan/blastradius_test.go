@@ -10,6 +10,7 @@ import (
 // its path, so blast-radius has a finding consumer to surface.
 func seedGitleaksDB(t *testing.T) string {
 	t.Helper()
+	t.Cleanup(func() { flagDB = "./keyspan.db" }) // restore global after --db flag mutates it
 	dir := t.TempDir()
 	dbPath := filepath.Join(dir, "keyspan.db")
 	root := newRootCmd()
@@ -28,6 +29,7 @@ func seedGitleaksDB(t *testing.T) string {
 
 func TestCmdBlastRadiusShowsFindingConsumer(t *testing.T) {
 	// Arrange: the basic gitleaks fixture names the secret after its rule.
+	t.Cleanup(func() { flagDB = "./keyspan.db" }) // restore global after --db flag mutates it
 	dbPath := seedGitleaksDB(t)
 	root := newRootCmd()
 	buf := &bytes.Buffer{}
@@ -52,6 +54,7 @@ func TestCmdBlastRadiusShowsFindingConsumer(t *testing.T) {
 
 func TestCmdBlastRadiusNoMatchExitsThree(t *testing.T) {
 	// Arrange
+	t.Cleanup(func() { flagDB = "./keyspan.db" }) // restore global after --db flag mutates it
 	dbPath := seedGitleaksDB(t)
 	root := newRootCmd()
 	root.SetOut(&bytes.Buffer{})
