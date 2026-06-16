@@ -31,7 +31,7 @@ func New(format string) (Renderer, error) {
 	case "json":
 		return jsonRenderer{}, nil
 	case "dot":
-		return nil, fmt.Errorf("%q renderer not implemented", format)
+		return dotRenderer{}, nil
 	case "html":
 		return nil, fmt.Errorf("%q renderer not implemented", format)
 	default:
