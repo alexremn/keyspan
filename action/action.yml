@@ -1,0 +1,81 @@
+# action/action.yml
+# SPDX-License-Identifier: Apache-2.0
+name: keyspan-blast-radius
+description: >-
+  Comment a secret blast-radius map (masked by default) on a pull request,
+  scoped to the secret surfaces (GitHub Actions workflows, k8s/ESO manifests)
+  the PR diff touches.
+author: alexremn
+
+branding:
+  icon: shield
+  color: red
+
+inputs:
+  path:
+    description: Root directory to scan for GHA workflows and k8s/ESO manifests.
+    required: false
+    default: "."
+  db:
+    description: SQLite graph DB path. Treated as sensitive; kept under runner.temp.
+    required: false
+    default: ${{ runner.temp }}/keyspan.db
+  min-confidence:
+    description: Inclusive confidence gate for correlation edges (0.0-1.0).
+    required: false
+    default: "0.50"
+  report:
+    description: Optional gitleaks/trufflehog findings JSON to ingest as entry points.
+    required: false
+    default: ""
+  reveal-names:
+    description: Show secret names in the PR comment (masked by default).
+    required: false
+    default: "false"
+  include-locations:
+    description: Show File:Line locations in the PR comment (omitted by default).
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Build keyspan
+      shell: bash
+      run: |
+        set -euo pipefail
+        go build -trimpath -o "${{ runner.temp }}/keyspan" ./cmd/keyspan
+        echo "${{ runner.temp }}" >> "$GITHUB_PATH"
+
+    - name: Scan and ingest
+      shell: bash
+      env:
+        KEYSPAN_BIN: ${{ runner.temp }}/keyspan
+        KEYSPAN_DB: ${{ inputs.db }}
+        KEYSPAN_PATH: ${{ inputs.path }}
+        KEYSPAN_MIN_CONFIDENCE: ${{ inputs.min-confidence }}
+        KEYSPAN_REPORT: ${{ inputs.report }}
+      run: |
+        set -euo pipefail
+        "$KEYSPAN_BIN" --db "$KEYSPAN_DB" scan "$KEYSPAN_PATH"
+        if [ -n "$KEYSPAN_REPORT" ]; then
+          "$KEYSPAN_BIN" --db "$KEYSPAN_DB" ingest gitleaks "$KEYSPAN_REPORT"
+        fi
+
+    - name: Blast radius PR comment
+      shell: bash
+      env:
+        KEYSPAN_BIN: ${{ runner.temp }}/keyspan
+        KEYSPAN_DB: ${{ inputs.db }}
+        KEYSPAN_PATH: ${{ inputs.path }}
+        KEYSPAN_MIN_CONFIDENCE: ${{ inputs.min-confidence }}
+        KEYSPAN_REVEAL_NAMES: ${{ inputs.reveal-names }}
+        KEYSPAN_INCLUDE_LOCATIONS: ${{ inputs.include-locations }}
+        KEYSPAN_REPORT: ${{ inputs.report }}
+        KEYSPAN_IS_PUBLIC: ${{ github.event.repository.private == false }}
+        KEYSPAN_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        KEYSPAN_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        bash "${{ github.action_path }}/entrypoint.sh"
