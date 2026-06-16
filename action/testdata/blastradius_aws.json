@@ -1,0 +1,56 @@
+{
+  "start": {
+    "id": "0123456789abcdef0123456789abcdef",
+    "type": "secret",
+    "name": "aws_access_key_id",
+    "fingerprint": "",
+    "attrs": {}
+  },
+  "cluster": [
+    {
+      "id": "0123456789abcdef0123456789abcdef",
+      "type": "secret",
+      "name": "aws_access_key_id",
+      "fingerprint": "",
+      "attrs": {}
+    }
+  ],
+  "consumers": [
+    {
+      "node": {
+        "id": "fedcba9876543210fedcba9876543210",
+        "type": "consumer",
+        "name": "gha:.github/workflows/deploy.yml#deploy.push",
+        "fingerprint": "",
+        "attrs": {"surface": "gha"}
+      },
+      "confidence": 0.95,
+      "band": "high",
+      "chain": [
+        {
+          "id": "aaaa1111bbbb2222cccc3333dddd4444",
+          "src": "fedcba9876543210fedcba9876543210",
+          "dst": "0123456789abcdef0123456789abcdef",
+          "type": "references",
+          "direction": "directed",
+          "confidence": 1.0,
+          "provenance": {
+            "rule_id": "structural",
+            "evidence": ["${{ secrets.AWS_ACCESS_KEY_ID }}"],
+            "locations": [{"file": "deploy.yml", "line": 42, "surface": "gha"}],
+            "matched_tokens": ["AWS_ACCESS_KEY_ID"]
+          }
+        }
+      ],
+      "owners": [
+        {
+          "id": "9999888877776666555544443333222a",
+          "type": "owner",
+          "name": "team:@org/sre",
+          "fingerprint": "",
+          "attrs": {}
+        }
+      ]
+    }
+  ]
+}
