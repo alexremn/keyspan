@@ -4,9 +4,11 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/alexremn/keyspan/internal/graph"
+	"github.com/alexremn/keyspan/internal/normalize"
 )
 
 func writeK8sFile(t *testing.T, dir, name, content string) {
@@ -159,6 +161,122 @@ spec:
 	}
 	if !foundConsumerAttr {
 		t.Errorf("ExternalSecret consumer missing remote_ref_keys attr")
+	}
+}
+
+func TestK8sScannerNamespaceOwnedByEdge(t *testing.T) {
+	dir := t.TempDir()
+	writeK8sFile(t, dir, "ns-and-deploy.yaml", `apiVersion: v1
+kind: Namespace
+metadata:
+  name: prod
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: prod
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          env:
+            - name: TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: api-secret
+                  key: token
+`)
+
+	s := newK8sScanner(ScanOptions{})
+	nodes, edges, err := s.Scan(context.Background(), dir)
+	if err != nil {
+		t.Fatalf("Scan error: %v", err)
+	}
+
+	ownerID := graph.NodeID(graph.NodeOwner, "ns:prod")
+	var ownerNode bool
+	for _, n := range nodes {
+		if n.ID == ownerID && n.Type == graph.NodeOwner {
+			ownerNode = true
+		}
+	}
+	if !ownerNode {
+		t.Fatalf("missing namespace Owner node ns:prod")
+	}
+
+	// The Deployment consumer owned_by the prod namespace Owner (directed conf 1.0).
+	var found bool
+	for _, e := range edges {
+		if e.Type != graph.EdgeOwnedBy {
+			continue
+		}
+		if e.Dst == ownerID && e.Direction == graph.Directed && e.Confidence == 1.0 {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("expected owned_by edge to ns:prod owner, got none")
+	}
+}
+
+func TestK8sScannerFingerprintInlineHashesAndNeverPersistsRaw(t *testing.T) {
+	dir := t.TempDir()
+	// data.token base64-decodes to the raw value "supersecretvalue".
+	const rawValue = "supersecretvalue"
+	writeK8sFile(t, dir, "secret.yaml", `apiVersion: v1
+kind: Secret
+metadata:
+  name: api-secret
+  namespace: prod
+data:
+  token: c3VwZXJzZWNyZXR2YWx1ZQ==
+stringData:
+  plain: supersecretvalue
+`)
+
+	salt := []byte("0123456789abcdef0123456789abcdef")
+
+	// Mode OFF (default): no fingerprint computed; only the key name is recorded.
+	off := newK8sScanner(ScanOptions{FingerprintInline: false, Salt: salt})
+	offNodes, _, err := off.Scan(context.Background(), dir)
+	if err != nil {
+		t.Fatalf("off-mode scan error: %v", err)
+	}
+	for _, n := range offNodes {
+		if n.Type == graph.NodeSecret && n.Fingerprint != "" {
+			t.Errorf("FingerprintInline off: secret %q must have no fingerprint, got %q", n.Name, n.Fingerprint)
+		}
+	}
+
+	// Mode ON: a fingerprint is computed from the decoded value; raw never appears.
+	on := newK8sScanner(ScanOptions{FingerprintInline: true, Salt: salt})
+	onNodes, _, err := on.Scan(context.Background(), dir)
+	if err != nil {
+		t.Fatalf("on-mode scan error: %v", err)
+	}
+	var fingerprinted bool
+	want := normalize.Fingerprint(salt, rawValue)
+	for _, n := range onNodes {
+		if n.Type != graph.NodeSecret {
+			continue
+		}
+		if n.Fingerprint == want {
+			fingerprinted = true
+		}
+		// Raw value must never land in any persisted field.
+		if strings.Contains(n.Name, rawValue) || strings.Contains(n.Fingerprint, rawValue) {
+			t.Errorf("raw value leaked in node %q (name=%q fp=%q)", n.ID, n.Name, n.Fingerprint)
+		}
+		for k, v := range n.Attrs {
+			if strings.Contains(v, rawValue) {
+				t.Errorf("raw value leaked in attr %s=%q", k, v)
+			}
+		}
+	}
+	if !fingerprinted {
+		t.Errorf("FingerprintInline on: expected a secret fingerprinted to %q", want)
 	}
 }
 

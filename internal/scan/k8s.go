@@ -3,6 +3,7 @@ package scan
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -186,6 +187,12 @@ func (s *k8sScanner) scanWorkload(doc map[string]any, kind, rel string) ([]graph
 		edges = append(edges, edge)
 	}
 
+	if firstConsumerID != "" {
+		owner, oe := ownerEdge(firstConsumerID, ns)
+		nodes = append(nodes, owner)
+		edges = append(edges, oe)
+	}
+
 	return nodes, edges
 }
 
@@ -223,6 +230,32 @@ func (s *k8sScanner) secretEdge(consumerID, secretName string, et graph.EdgeType
 		},
 	}
 	return sn, edge
+}
+
+// ownerEdge builds the namespace Owner node and a consumer → owner owned_by
+// edge (directed, conf 1.0).
+func ownerEdge(consumerID, ns string) (graph.Node, graph.Edge) {
+	ownerID := graph.NodeID(graph.NodeOwner, "ns:"+ns)
+	owner := graph.Node{
+		ID:    ownerID,
+		Type:  graph.NodeOwner,
+		Name:  ns,
+		Attrs: map[string]string{"kind": "namespace"},
+	}
+	edge := graph.Edge{
+		ID:         graph.EdgeID(consumerID, ownerID, graph.EdgeOwnedBy),
+		Src:        consumerID,
+		Dst:        ownerID,
+		Type:       graph.EdgeOwnedBy,
+		Direction:  graph.Directed,
+		Confidence: 1.0,
+		Provenance: graph.Provenance{
+			RuleID:        string(graph.EdgeOwnedBy),
+			Evidence:      []string{"metadata.namespace"},
+			MatchedTokens: []string{ns},
+		},
+	}
+	return owner, edge
 }
 
 // envSecretKeyRefs returns secret names from container env[].valueFrom.secretKeyRef.
@@ -299,7 +332,44 @@ func (s *k8sScanner) scanSecret(doc map[string]any, rel string) ([]graph.Node, [
 		return nil, nil
 	}
 	node, _ := secretNodeByName(name)
+
+	// KEY NAMES ONLY by default: never decode data:/stringData:. Only when
+	// FingerprintInline is set do we read values, hash them, and discard the raw.
+	if s.opts.FingerprintInline {
+		if fp := s.fingerprintInlineSecret(doc); fp != "" {
+			node.Fingerprint = fp
+		}
+	}
 	return []graph.Node{node}, nil
+}
+
+// fingerprintInlineSecret decodes inline data:/stringData: values, computes the
+// HMAC fingerprint of the FIRST decodable value, and discards the raw literal.
+// The raw value is never returned, stored, or logged (§4.4).
+func (s *k8sScanner) fingerprintInlineSecret(doc map[string]any) string {
+	data, _ := doc["data"].(map[string]any)
+	for _, v := range data {
+		enc, ok := v.(string)
+		if !ok {
+			continue
+		}
+		raw, err := base64.StdEncoding.DecodeString(enc)
+		if err != nil {
+			continue
+		}
+		fp := normalize.Fingerprint(s.opts.Salt, string(raw))
+		// raw goes out of scope here and is never persisted.
+		return fp
+	}
+	stringData, _ := doc["stringData"].(map[string]any)
+	for _, v := range stringData {
+		raw, ok := v.(string)
+		if !ok {
+			continue
+		}
+		return normalize.Fingerprint(s.opts.Salt, raw)
+	}
+	return ""
 }
 
 // secretNodeByStoreKey builds a Secret node keyed `store:<backend-key>` so an
@@ -390,6 +460,10 @@ func (s *k8sScanner) scanExternalSecret(doc map[string]any, rel string) ([]graph
 			},
 		})
 	}
+
+	owner, oe := ownerEdge(consumer.ID, ns)
+	nodes = append(nodes, owner)
+	edges = append(edges, oe)
 
 	return nodes, edges
 }
