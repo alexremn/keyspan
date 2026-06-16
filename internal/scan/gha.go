@@ -98,6 +98,18 @@ func (s *ghaScanner) Scan(ctx context.Context, root string) ([]graph.Node, []gra
 		}
 	}
 
+	// Fold CODEOWNERS ownership into the same gha surface result.
+	coNodes, coEdges, err := scanCodeowners(root)
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, n := range coNodes {
+		addNode(n)
+	}
+	for _, e := range coEdges {
+		addEdge(e)
+	}
+
 	return nodes, edges, nil
 }
 

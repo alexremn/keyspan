@@ -51,6 +51,7 @@ func newRootCmd() *cobra.Command {
 	root.AddCommand(newVersionCmd())
 	root.AddCommand(newIngestCmd())
 	root.AddCommand(newBlastRadiusCmd())
+	root.AddCommand(newScanCmd())
 
 	return root
 }
