@@ -134,24 +134,163 @@ func (s *k8sScanner) dispatch(doc map[string]any, rel string) ([]graph.Node, []g
 func (s *k8sScanner) scanWorkload(doc map[string]any, kind, rel string) ([]graph.Node, []graph.Edge) {
 	ns := metaNamespace(doc)
 	name := metaName(doc)
-	containers := podContainers(doc, kind)
-	var nodes []graph.Node
-	for _, c := range containers {
-		cName, _ := c["name"].(string)
-		canonicalKey := fmt.Sprintf("k8s:%s/%s/%s#%s", ns, kind, name, cName)
-		nodes = append(nodes, graph.Node{
-			ID:   graph.NodeID(graph.NodeConsumer, canonicalKey),
-			Type: graph.NodeConsumer,
-			Name: fmt.Sprintf("%s/%s/%s [%s]", ns, kind, name, cName),
-			Attrs: map[string]string{
-				"surface":   "k8s",
-				"kind":      kind,
-				"namespace": ns,
-				"container": cName,
-			},
-		})
+	spec := podSpec(doc, kind)
+	if spec == nil {
+		return nil, nil
 	}
-	return nodes, nil
+	containers := podContainers(doc, kind)
+	if len(containers) == 0 {
+		return nil, nil
+	}
+
+	loc := graph.Location{File: rel, Surface: "k8s"}
+	var nodes []graph.Node
+	var edges []graph.Edge
+
+	// Pod-level secret references (imagePullSecrets, volumes) attach to the first
+	// container so they always have a valid Consumer source.
+	firstConsumerID := ""
+
+	for i, c := range containers {
+		cName, _ := c["name"].(string)
+		consumer := s.consumerNode(ns, kind, name, cName)
+		nodes = append(nodes, consumer)
+		if i == 0 {
+			firstConsumerID = consumer.ID
+		}
+
+		// env[].valueFrom.secretKeyRef → injects
+		for _, secretName := range envSecretKeyRefs(c) {
+			sn, edge := s.secretEdge(consumer.ID, secretName, graph.EdgeInjects, "secretKeyRef", loc)
+			nodes = append(nodes, sn)
+			edges = append(edges, edge)
+		}
+		// envFrom[].secretRef → injects
+		for _, secretName := range envFromSecretRefs(c) {
+			sn, edge := s.secretEdge(consumer.ID, secretName, graph.EdgeInjects, "envFrom.secretRef", loc)
+			nodes = append(nodes, sn)
+			edges = append(edges, edge)
+		}
+	}
+
+	// volumes[].secret.secretName → mounts (pod-level)
+	for _, secretName := range volumeSecrets(spec) {
+		sn, edge := s.secretEdge(firstConsumerID, secretName, graph.EdgeMounts, "volume.secret", loc)
+		nodes = append(nodes, sn)
+		edges = append(edges, edge)
+	}
+	// imagePullSecrets[].name → pulls (pod-level, lower signal)
+	for _, secretName := range imagePullSecrets(spec) {
+		sn, edge := s.secretEdge(firstConsumerID, secretName, graph.EdgePulls, "imagePullSecret", loc)
+		nodes = append(nodes, sn)
+		edges = append(edges, edge)
+	}
+
+	return nodes, edges
+}
+
+func (s *k8sScanner) consumerNode(ns, kind, name, container string) graph.Node {
+	canonicalKey := fmt.Sprintf("k8s:%s/%s/%s#%s", ns, kind, name, container)
+	return graph.Node{
+		ID:   graph.NodeID(graph.NodeConsumer, canonicalKey),
+		Type: graph.NodeConsumer,
+		Name: fmt.Sprintf("%s/%s/%s [%s]", ns, kind, name, container),
+		Attrs: map[string]string{
+			"surface":   "k8s",
+			"kind":      kind,
+			"namespace": ns,
+			"container": container,
+		},
+	}
+}
+
+// secretEdge builds the name-keyed Secret node and a structural edge
+// Consumer → Secret (directed, confidence 1.0) of the given type.
+func (s *k8sScanner) secretEdge(consumerID, secretName string, et graph.EdgeType, ev string, loc graph.Location) (graph.Node, graph.Edge) {
+	sn, sid := secretNodeByName(secretName)
+	edge := graph.Edge{
+		ID:         graph.EdgeID(consumerID, sid, et),
+		Src:        consumerID,
+		Dst:        sid,
+		Type:       et,
+		Direction:  graph.Directed,
+		Confidence: 1.0,
+		Provenance: graph.Provenance{
+			RuleID:        string(et),
+			Evidence:      []string{ev},
+			Locations:     []graph.Location{loc},
+			MatchedTokens: []string{secretName},
+		},
+	}
+	return sn, edge
+}
+
+// envSecretKeyRefs returns secret names from container env[].valueFrom.secretKeyRef.
+func envSecretKeyRefs(c map[string]any) []string {
+	var out []string
+	env, _ := c["env"].([]any)
+	for _, e := range env {
+		em, ok := e.(map[string]any)
+		if !ok {
+			continue
+		}
+		vf, _ := em["valueFrom"].(map[string]any)
+		ref, _ := vf["secretKeyRef"].(map[string]any)
+		if n, _ := ref["name"].(string); n != "" {
+			out = append(out, n)
+		}
+	}
+	return out
+}
+
+// envFromSecretRefs returns secret names from container envFrom[].secretRef.
+func envFromSecretRefs(c map[string]any) []string {
+	var out []string
+	envFrom, _ := c["envFrom"].([]any)
+	for _, e := range envFrom {
+		em, ok := e.(map[string]any)
+		if !ok {
+			continue
+		}
+		ref, _ := em["secretRef"].(map[string]any)
+		if n, _ := ref["name"].(string); n != "" {
+			out = append(out, n)
+		}
+	}
+	return out
+}
+
+// volumeSecrets returns secret names from spec.volumes[].secret.secretName.
+func volumeSecrets(spec map[string]any) []string {
+	var out []string
+	vols, _ := spec["volumes"].([]any)
+	for _, v := range vols {
+		vm, ok := v.(map[string]any)
+		if !ok {
+			continue
+		}
+		sec, _ := vm["secret"].(map[string]any)
+		if n, _ := sec["secretName"].(string); n != "" {
+			out = append(out, n)
+		}
+	}
+	return out
+}
+
+// imagePullSecrets returns secret names from spec.imagePullSecrets[].name.
+func imagePullSecrets(spec map[string]any) []string {
+	var out []string
+	ips, _ := spec["imagePullSecrets"].([]any)
+	for _, p := range ips {
+		pm, ok := p.(map[string]any)
+		if !ok {
+			continue
+		}
+		if n, _ := pm["name"].(string); n != "" {
+			out = append(out, n)
+		}
+	}
+	return out
 }
 
 func (s *k8sScanner) scanSecret(doc map[string]any, rel string) ([]graph.Node, []graph.Edge) {
