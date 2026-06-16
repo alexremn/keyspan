@@ -195,8 +195,14 @@ func (g *Graph) collectConsumers(cluster map[string]float64) []ConsumerHit {
 				continue
 			}
 			existing, seen := hits[cnode.ID]
-			if seen && existing.Confidence >= bottleneck {
-				continue
+			if seen {
+				if existing.Confidence > bottleneck {
+					continue
+				}
+				// Equal confidence: keep the lexically smaller edge ID for stability.
+				if existing.Confidence == bottleneck && existing.Chain[0].ID <= e.ID {
+					continue
+				}
 			}
 			hits[cnode.ID] = &ConsumerHit{
 				Node:       cnode,

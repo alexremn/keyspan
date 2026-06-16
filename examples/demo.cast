@@ -1,0 +1,10 @@
+{"version": 2, "width": 100, "height": 28, "timestamp": 1781568000, "env": {"SHELL": "/bin/bash", "TERM": "xterm-256color"}, "title": "keyspan demo: gitleaks finding -> blast radius"}
+[0.5, "o", "$ keyspan ingest gitleaks examples/reports/gitleaks.json\r\n"]
+[1.0, "o", "ingested 2 findings, 2 secrets\r\n"]
+[1.6, "o", "$ keyspan scan examples/repo\r\n"]
+[2.2, "o", "scanned 1 workflow, 1 deployment, 1 externalsecret\r\n"]
+[2.8, "o", "$ keyspan recorrelate\r\n"]
+[3.3, "o", "wrote 3 correlates edges\r\n"]
+[3.9, "o", "$ keyspan blast-radius name:DATABASE_PASSWORD\r\n"]
+[4.6, "o", "secret: DATABASE_PASSWORD\r\n  consumers (3):\r\n    [HIGH] gha ci.yml#build.migrate\r\n    [HIGH] k8s prod/Deployment/api#api (injects)\r\n    [HIGH] eso prod/db-credentials (syncs)\r\n  owners: @keyspan-demo/platform, @keyspan-demo/sre\r\n"]
+[7.0, "o", "$ \r\n"]

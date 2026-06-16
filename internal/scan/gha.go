@@ -190,12 +190,12 @@ func emitSecretReference(
 	addNode func(graph.Node),
 	addEdge func(graph.Edge),
 ) {
-	secretName := normalize.IdentityName(secretRawName)
-	secretID := graph.NodeID(graph.NodeSecret, secretName)
+	canonical := normalize.IdentityName(secretRawName)
+	secretID := graph.NodeID(graph.NodeSecret, canonical)
 	addNode(graph.Node{
 		ID:    secretID,
 		Type:  graph.NodeSecret,
-		Name:  secretName,
+		Name:  secretRawName,
 		Attrs: map[string]string{},
 	})
 	edgeID := graph.EdgeID(consumerID, secretID, graph.EdgeReferences)
@@ -216,7 +216,7 @@ func emitSecretReference(
 			RuleID:        ruleID,
 			Evidence:      []string{evidence},
 			Locations:     []graph.Location{{File: relpath, Surface: ghaSurface}},
-			MatchedTokens: []string{secretName},
+			MatchedTokens: []string{secretRawName},
 		},
 	})
 }

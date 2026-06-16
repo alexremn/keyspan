@@ -1,0 +1,30 @@
+[
+  {
+    "RuleID": "generic-api-key",
+    "Description": "Detected a generic API key",
+    "File": "config/database.yml",
+    "StartLine": 12,
+    "EndLine": 12,
+    "Commit": "0000000000000000000000000000000000000000",
+    "Author": "demo",
+    "Email": "demo@example.com",
+    "Date": "2026-06-15T00:00:00Z",
+    "Fingerprint": "0000000000000000000000000000000000000000:config/database.yml:generic-api-key:12",
+    "Match": "password: s3cr3t-pw-do-not-use",
+    "Secret": "s3cr3t-pw-do-not-use"
+  },
+  {
+    "RuleID": "aws-access-token",
+    "Description": "Detected an AWS Access Key ID",
+    "File": "deploy/credentials",
+    "StartLine": 3,
+    "EndLine": 3,
+    "Commit": "0000000000000000000000000000000000000000",
+    "Author": "demo",
+    "Email": "demo@example.com",
+    "Date": "2026-06-15T00:00:00Z",
+    "Fingerprint": "0000000000000000000000000000000000000000:deploy/credentials:aws-access-token:3",
+    "Match": "AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE",
+    "Secret": "AKIAIOSFODNN7EXAMPLE"
+  }
+]

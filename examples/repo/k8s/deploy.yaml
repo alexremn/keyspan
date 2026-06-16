@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: prod
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: api }
+  template:
+    metadata:
+      labels: { app: api }
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/keyspan-demo/api:latest
+          env:
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: database-password
+                  key: password
+          volumeMounts:
+            - name: tls
+              mountPath: /etc/tls
+      volumes:
+        - name: tls
+          secret:
+            secretName: database-password
+---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: db-credentials
+  namespace: prod
+spec:
+  secretStoreRef:
+    name: aws-secrets
+    kind: ClusterSecretStore
+  target:
+    name: database-password
+  data:
+    - secretKey: password
+      remoteRef:
+        key: prod/database/password

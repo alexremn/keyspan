@@ -1,0 +1,3 @@
+# Demo CODEOWNERS — used by keyspan to attach owners to consumers.
+*           @keyspan-demo/platform
+/k8s/       @keyspan-demo/sre

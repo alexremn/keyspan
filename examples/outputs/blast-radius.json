@@ -1,0 +1,156 @@
+{
+  "start": {
+    "id": "c337e4df770b07b41d8737d870b20cea",
+    "type": "secret",
+    "name": "DATABASE_PASSWORD",
+    "attrs": {}
+  },
+  "cluster": [
+    {
+      "id": "111cbce69a1da183828d4ffc68592370",
+      "type": "secret",
+      "name": "database-password",
+      "attrs": {}
+    },
+    {
+      "id": "c337e4df770b07b41d8737d870b20cea",
+      "type": "secret",
+      "name": "DATABASE_PASSWORD",
+      "attrs": {}
+    },
+    {
+      "id": "e036d4a97a2f6e6620ed88ee2c2d3f36",
+      "type": "secret",
+      "name": "prod/database/password",
+      "attrs": {
+        "backend_key": "prod/database/password"
+      }
+    }
+  ],
+  "consumers": [
+    {
+      "node": {
+        "id": "ce7421481fb37aed80e5b992a0af62b9",
+        "type": "consumer",
+        "name": "gha:.github/workflows/ci.yml#build.migrate",
+        "attrs": {
+          "file": ".github/workflows/ci.yml",
+          "job": "build",
+          "step": "migrate",
+          "surface": "gha"
+        }
+      },
+      "confidence": 1,
+      "band": "high",
+      "chain": [
+        {
+          "id": "6dcc229219429c69f22b97d44d7cab97",
+          "src": "ce7421481fb37aed80e5b992a0af62b9",
+          "dst": "c337e4df770b07b41d8737d870b20cea",
+          "type": "references",
+          "direction": "directed",
+          "confidence": 1,
+          "provenance": {
+            "rule_id": "gha-reference",
+            "evidence": [
+              "secrets.DATABASE_PASSWORD referenced in .github/workflows/ci.yml"
+            ],
+            "matched_tokens": [
+              "DATABASE_PASSWORD"
+            ]
+          }
+        }
+      ],
+      "owners": []
+    },
+    {
+      "node": {
+        "id": "ea8d0b8db0f16ef2faafaa1a7477ce43",
+        "type": "consumer",
+        "name": "prod/Deployment/api [api]",
+        "attrs": {
+          "container": "api",
+          "kind": "Deployment",
+          "namespace": "prod",
+          "surface": "k8s"
+        }
+      },
+      "confidence": 0.55,
+      "band": "low",
+      "chain": [
+        {
+          "id": "270bf38c49bda9e9decb832af08cdbd8",
+          "src": "ea8d0b8db0f16ef2faafaa1a7477ce43",
+          "dst": "111cbce69a1da183828d4ffc68592370",
+          "type": "injects",
+          "direction": "directed",
+          "confidence": 1,
+          "provenance": {
+            "rule_id": "injects",
+            "evidence": [
+              "secretKeyRef"
+            ],
+            "matched_tokens": [
+              "database-password"
+            ]
+          }
+        }
+      ],
+      "owners": [
+        {
+          "id": "ce820594103fcf6426409fff1092d91e",
+          "type": "owner",
+          "name": "prod",
+          "attrs": {
+            "kind": "namespace"
+          }
+        }
+      ]
+    },
+    {
+      "node": {
+        "id": "e732de264a6b7a2823a9c1a6b1aff6d6",
+        "type": "consumer",
+        "name": "prod/ExternalSecret/db-credentials",
+        "attrs": {
+          "kind": "ExternalSecret",
+          "namespace": "prod",
+          "remote_ref_keys": "prod/database/password",
+          "surface": "k8s",
+          "target": "database-password"
+        }
+      },
+      "confidence": 0.55,
+      "band": "low",
+      "chain": [
+        {
+          "id": "511db1df3ff97839895436bd45c7e99c",
+          "src": "e732de264a6b7a2823a9c1a6b1aff6d6",
+          "dst": "e036d4a97a2f6e6620ed88ee2c2d3f36",
+          "type": "references",
+          "direction": "directed",
+          "confidence": 1,
+          "provenance": {
+            "rule_id": "references",
+            "evidence": [
+              "spec.data[].remoteRef.key"
+            ],
+            "matched_tokens": [
+              "prod/database/password"
+            ]
+          }
+        }
+      ],
+      "owners": [
+        {
+          "id": "ce820594103fcf6426409fff1092d91e",
+          "type": "owner",
+          "name": "prod",
+          "attrs": {
+            "kind": "namespace"
+          }
+        }
+      ]
+    }
+  ]
+}
