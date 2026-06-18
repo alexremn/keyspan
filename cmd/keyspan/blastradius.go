@@ -44,7 +44,7 @@ func newBlastRadiusCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "blast-radius <ref>",
 		Short: "Show what breaks if you rotate a credential, and who owns it",
-		Args:  cobra.ExactArgs(1),
+		Args: wrapArgsUsage(cobra.ExactArgs(1)),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ref := args[0]
 

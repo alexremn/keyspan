@@ -17,7 +17,7 @@ func newIngestCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ingest <tool> <report>",
 		Short: "Ingest a secret-detection report (gitleaks|trufflehog) as graph entry points",
-		Args:  cobra.ExactArgs(2),
+		Args: wrapArgsUsage(cobra.ExactArgs(2)),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			tool, reportPath := args[0], args[1]
 

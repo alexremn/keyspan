@@ -16,7 +16,7 @@ func main() {
 }
 
 func run() int {
-	if err := newRootCmd().Execute(); err != nil {
+	if err := executeRoot(newRootCmd()); err != nil {
 		fmt.Fprintln(os.Stderr, "keyspan:", err)
 		return exitCodeFor(err)
 	}

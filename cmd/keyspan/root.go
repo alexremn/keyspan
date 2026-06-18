@@ -3,7 +3,9 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"strings"
 
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
@@ -30,6 +32,17 @@ var (
 	flagFingerprintInline = false
 )
 
+// wrapArgsUsage wraps a cobra positional-arguments validator so that any
+// validation failure carries errUsage, mapping it to exit code 2 (§9).
+func wrapArgsUsage(v cobra.PositionalArgs) cobra.PositionalArgs {
+	return func(cmd *cobra.Command, args []string) error {
+		if err := v(cmd, args); err != nil {
+			return fmt.Errorf("%w: %v", errUsage, err)
+		}
+		return nil
+	}
+}
+
 // newRootCmd builds the keyspan root command and registers subcommands.
 func newRootCmd() *cobra.Command {
 	root := &cobra.Command{
@@ -39,6 +52,12 @@ func newRootCmd() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
+
+	// Wrap cobra's flag-parse errors with errUsage so exitCodeFor maps them
+	// to exit 2 rather than the default exit 1.
+	root.SetFlagErrorFunc(func(cmd *cobra.Command, err error) error {
+		return fmt.Errorf("%w: %v", errUsage, err)
+	})
 
 	pf := root.PersistentFlags()
 	pf.StringVar(&flagDB, "db", flagDB, "path to the keyspan SQLite DB")
@@ -57,6 +76,23 @@ func newRootCmd() *cobra.Command {
 	root.AddCommand(newExportCmd())
 
 	return root
+}
+
+// executeRoot runs cmd.Execute() and normalises cobra's "unknown command" errors
+// (which cobra returns as plain strings) to carry errUsage, so exitCodeFor maps
+// them to exit code 2 per §9.  Both run() and tests must call this instead of
+// Execute() directly so the exit-code contract is consistently enforced.
+func executeRoot(root *cobra.Command) error {
+	err := root.Execute()
+	if err == nil {
+		return nil
+	}
+	// Cobra reports unknown subcommands as a plain error string; there is no
+	// structured sentinel, so we inspect the prefix.
+	if strings.HasPrefix(err.Error(), "unknown command") {
+		return fmt.Errorf("%w: %v", errUsage, err)
+	}
+	return err
 }
 
 // isTTY reports whether f is an interactive terminal.

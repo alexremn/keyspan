@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-06-18
+
 ### Added
 
 - Findings ingest for gitleaks and trufflehog reports (graph entry points).
@@ -25,4 +27,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   consumer when present. CODEOWNERS team/path ownership attribution is planned for
   v1.1.
 
-[Unreleased]: https://github.com/alexremn/keyspan/commits/main
+[Unreleased]: https://github.com/alexremn/keyspan/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/alexremn/keyspan/releases/tag/v1.0.0

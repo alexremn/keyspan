@@ -16,8 +16,15 @@ import (
 func newScanCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "scan <path...>",
-		Short: "Populate the graph from GitHub Actions surfaces",
-		Args:  cobra.MinimumNArgs(1),
+		Short: "Populate the graph from GitHub Actions and Kubernetes/ESO surfaces",
+		Long: `scan walks each <path> with every registered scanner and upserts the results into the keyspan graph.
+
+Scanners run on each path:
+  - GitHub Actions: discovers secrets.* references and env: indirections in .github/workflows/*.yml
+  - Kubernetes/ESO: discovers injects/mounts/pulls edges and ExternalSecret pivots in k8s manifests
+
+After scanning, correlation edges are computed and persisted so blast-radius queries are ready immediately.`,
+		Args: wrapArgsUsage(cobra.MinimumNArgs(1)),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runScan(cmd, args)
 		},

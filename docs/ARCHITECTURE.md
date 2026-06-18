@@ -81,15 +81,17 @@ hint (no silent migration).
 ## Layout
 
 ```
-cmd/keyspan/        main + cobra wiring
-internal/scan/      scanners: findings, gha, k8s
-internal/normalize/ identity + name-grade canonicalization, fingerprints
-internal/correlate/ rules + engine
-internal/graph/     node/edge model, widest-path traversal
-internal/store/     SQLite schema, pragmas, read/write, versioning
-internal/render/    human / json / dot / html (+ embedded cytoscape)
-action/             GitHub Action
-examples/           committed demo repo + reports + sample outputs
-testdata/           fixtures
-docs/               this file + ROADMAP.md
+cmd/keyspan/              main + cobra wiring
+internal/scan/            scanners: findings, gha, k8s
+internal/scan/testdata/   fixtures for scan tests (gha/, gitleaks/, trufflehog/)
+internal/normalize/       identity + name-grade canonicalization, fingerprints
+internal/correlate/       rules + engine
+internal/graph/           node/edge model, widest-path traversal
+internal/store/           SQLite schema, pragmas, read/write, versioning
+internal/render/          human / json / dot / html (+ embedded cytoscape)
+internal/security/        invariant tests
+action/                   GitHub Action
+action/testdata/          fixtures for action tests
+examples/                 committed demo repo + reports + sample outputs
+docs/                     this file + ROADMAP.md
 ```
