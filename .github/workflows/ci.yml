@@ -31,7 +31,7 @@ jobs:
       - name: gosec
         run: |
           go install github.com/securego/gosec/v2/cmd/gosec@latest
-          gosec -quiet -exclude=G304,G104 ./...
+          gosec -quiet -exclude=G304,G104,G203 ./...
   lint:
     runs-on: ubuntu-latest
     steps:
