@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-06-21
+
+### Fixed
+
+- First release built from the now-public repository, so the build-provenance
+  attestation succeeds. 1.0.2 introduced the attestation but failed to persist
+  it while the repo was private (GitHub gates attestation storage to public
+  user repos). `brew install alexremn/tap/keyspan`, `go install`, and release
+  asset downloads also require the public repo.
+
 ## [1.0.2] - 2026-06-21
 
 ### Changed
@@ -48,7 +58,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   consumer when present. CODEOWNERS team/path ownership attribution is planned for
   v1.1.
 
-[Unreleased]: https://github.com/alexremn/keyspan/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/alexremn/keyspan/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/alexremn/keyspan/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/alexremn/keyspan/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/alexremn/keyspan/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/alexremn/keyspan/releases/tag/v1.0.0
