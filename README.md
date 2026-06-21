@@ -65,6 +65,12 @@ Committed samples for all formats live in
 
 ## Install
 
+### Homebrew
+
+```bash
+brew install alexremn/tap/keyspan
+```
+
 ### go install
 
 ```bash

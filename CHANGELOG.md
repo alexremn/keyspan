@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Action: masked-by-default PR comment with a public-repo guard.
 - SQLite storage with salted fingerprints, `0600` DB, schema versioning.
 - Release pipeline: cosign-signed checksums, SLSA provenance, syft SBOM.
+- Homebrew cask published to `alexremn/homebrew-tap` (`brew install alexremn/tap/keyspan`).
 - Human renderer now surfaces Kubernetes namespace ownership (`owners:` line) per
   consumer when present. CODEOWNERS team/path ownership attribution is planned for
   v1.1.

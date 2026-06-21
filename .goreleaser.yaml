@@ -57,6 +57,27 @@ signs:
     artifacts: checksum
     output: true
 
+# homebrew_casks (brews: is deprecated for pre-built CLI binaries). The single
+# `keyspan` binary is auto-detected from the archive and placed on PATH.
+homebrew_casks:
+  - name: keyspan
+    repository:
+      owner: alexremn
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    homepage: https://github.com/alexremn/keyspan
+    description: "Secret blast-radius graph: if I rotate this credential, what breaks and who owns it?"
+    commit_author:
+      name: goreleaser-bot
+      email: goreleaser@users.noreply.github.com
+    # Strip the macOS quarantine xattr so the unsigned binary runs without a Gatekeeper prompt.
+    hooks:
+      post:
+        install: |
+          if system_command("/usr/bin/xattr", args: ["-h"]).exit_status == 0
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/keyspan"]
+          end
+
 release:
   draft: false
   prerelease: auto
