@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-06-21
+
+### Changed
+
+- SLSA build provenance is now produced by GitHub's
+  `actions/attest-build-provenance` instead of `slsa-github-generator`, whose
+  v2.1.0 reusable workflow (the latest release) is broken on current runners and
+  never attached a provenance asset (1.0.0 and 1.0.1 shipped without it). Verify
+  with `gh attestation verify <archive> --repo alexremn/keyspan`. cosign-signed
+  checksums and the syft SBOM are unchanged.
+
 ## [1.0.1] - 2026-06-21
 
 ### Fixed
@@ -37,6 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   consumer when present. CODEOWNERS team/path ownership attribution is planned for
   v1.1.
 
-[Unreleased]: https://github.com/alexremn/keyspan/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/alexremn/keyspan/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/alexremn/keyspan/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/alexremn/keyspan/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/alexremn/keyspan/releases/tag/v1.0.0
