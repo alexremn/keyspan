@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-06-21
+
+### Fixed
+
+- SLSA provenance (`multiple.intoto.jsonl`) now attaches to releases. v1.0.0
+  shipped without it: the SLSA generator derived the provenance name but failed
+  to propagate it to the upload-assets step, so the asset never uploaded. Fixed
+  by pinning `provenance-name` in the release workflow.
+
 ## [1.0.0] - 2026-06-18
 
 ### Added
@@ -28,5 +37,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   consumer when present. CODEOWNERS team/path ownership attribution is planned for
   v1.1.
 
-[Unreleased]: https://github.com/alexremn/keyspan/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/alexremn/keyspan/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/alexremn/keyspan/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/alexremn/keyspan/releases/tag/v1.0.0

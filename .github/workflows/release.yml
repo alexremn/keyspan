@@ -54,3 +54,7 @@ jobs:
     with:
       base64-subjects: "${{ needs.goreleaser.outputs.hashes }}"
       upload-assets: true
+      # Pin the provenance filename. Without it the generator derives the name
+      # (multiple.intoto.jsonl) but fails to propagate it to the upload-assets
+      # job, so the asset never attaches (v1.0.0 shipped without provenance).
+      provenance-name: "multiple.intoto.jsonl"
