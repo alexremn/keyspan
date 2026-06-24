@@ -55,7 +55,7 @@ func newRootCmd() *cobra.Command {
 
 	// Wrap cobra's flag-parse errors with errUsage so exitCodeFor maps them
 	// to exit 2 rather than the default exit 1.
-	root.SetFlagErrorFunc(func(cmd *cobra.Command, err error) error {
+	root.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
 		return fmt.Errorf("%w: %v", errUsage, err)
 	})
 

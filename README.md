@@ -83,11 +83,12 @@ Download the archive for your platform from the
 [Releases](https://github.com/alexremn/keyspan/releases) page, then verify it
 (below) before use.
 
-## Verify a release (cosign + SLSA)
+## Verify a release (cosign + SLSA provenance)
 
 Releases ship a `checksums.txt`, a cosign **keyless** bundle
-`checksums.txt.sigstore.json`, a syft SBOM, and SLSA provenance
-(`*.intoto.jsonl`).
+`checksums.txt.sigstore.json`, and a syft SBOM per archive. Each archive also
+carries **SLSA build provenance** attested via GitHub
+([`actions/attest-build-provenance`](https://github.com/actions/attest-build-provenance)).
 
 ```bash
 # 1. Verify the cosign signature on the checksum file (keyless / Sigstore).
@@ -99,10 +100,9 @@ cosign verify-blob checksums.txt \
 # 2. Verify your downloaded archive's checksum is listed.
 sha256sum --check --ignore-missing checksums.txt
 
-# 3. Verify SLSA provenance for the archive.
-slsa-verifier verify-artifact keyspan_<version>_linux_amd64.tar.gz \
-  --provenance-path multiple.intoto.jsonl \
-  --source-uri github.com/alexremn/keyspan
+# 3. Verify SLSA build provenance for the archive (needs the gh CLI).
+gh attestation verify keyspan_<version>_linux_amd64.tar.gz \
+  --repo alexremn/keyspan
 ```
 
 ## CLI

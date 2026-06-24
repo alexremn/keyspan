@@ -11,10 +11,9 @@ jobs:
   goreleaser:
     runs-on: ubuntu-latest
     permissions:
-      contents: write   # create release + upload assets
-      id-token: write    # cosign keyless signing (OIDC)
-    outputs:
-      hashes: ${{ steps.hash.outputs.hashes }}
+      contents: write       # create release + upload assets
+      id-token: write        # cosign keyless signing + provenance OIDC
+      attestations: write    # store SLSA build provenance attestations
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -35,22 +34,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Push the generated cask to alexremn/homebrew-tap (PAT with repo scope).
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
-      - name: generate subject hashes
-        id: hash
-        env:
-          ARTIFACTS: "${{ steps.goreleaser.outputs.artifacts }}"
-        run: |
-          set -euo pipefail
-          checksum_file=$(echo "$ARTIFACTS" | jq -r '.[] | select(.type=="Checksum") | .path')
-          echo "hashes=$(base64 -w0 < "$checksum_file")" >> "$GITHUB_OUTPUT"
-
-  provenance:
-    needs: [goreleaser]
-    permissions:
-      actions: read     # read the workflow path
-      id-token: write    # sign the provenance
-      contents: write    # add the provenance asset to the release
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0 # SHA-pinning intentionally omitted: slsa-github-generator's own security model requires a semver tag so the SLSA verifier can locate the trusted builder — see https://github.com/slsa-framework/slsa-github-generator/blob/main/SECURITY.md
-    with:
-      base64-subjects: "${{ needs.goreleaser.outputs.hashes }}"
-      upload-assets: true
+      # SLSA build provenance over every released artifact. Reads goreleaser's
+      # checksums.txt (sha256sum format) so one attestation covers all archives.
+      # Verify: gh attestation verify <archive> --repo alexremn/keyspan
+      - uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        with:
+          subject-checksums: dist/checksums.txt
