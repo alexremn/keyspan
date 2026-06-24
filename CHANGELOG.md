@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-06-21
+
+### Fixed
+
+- First release built from the now-public repository, so the build-provenance
+  attestation succeeds. 1.0.2 introduced the attestation but failed to persist
+  it while the repo was private (GitHub gates attestation storage to public
+  user repos). `brew install alexremn/tap/keyspan`, `go install`, and release
+  asset downloads also require the public repo.
+
+## [1.0.2] - 2026-06-21
+
+### Changed
+
+- SLSA build provenance is now produced by GitHub's
+  `actions/attest-build-provenance` instead of `slsa-github-generator`, whose
+  v2.1.0 reusable workflow (the latest release) is broken on current runners and
+  never attached a provenance asset (1.0.0 and 1.0.1 shipped without it). Verify
+  with `gh attestation verify <archive> --repo alexremn/keyspan`. cosign-signed
+  checksums and the syft SBOM are unchanged.
+
+## [1.0.1] - 2026-06-21
+
+### Fixed
+
+- SLSA provenance (`multiple.intoto.jsonl`) now attaches to releases. v1.0.0
+  shipped without it: the SLSA generator derived the provenance name but failed
+  to propagate it to the upload-assets step, so the asset never uploaded. Fixed
+  by pinning `provenance-name` in the release workflow.
+
 ## [1.0.0] - 2026-06-18
 
 ### Added
@@ -28,5 +58,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   consumer when present. CODEOWNERS team/path ownership attribution is planned for
   v1.1.
 
-[Unreleased]: https://github.com/alexremn/keyspan/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/alexremn/keyspan/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/alexremn/keyspan/compare/v1.0.2...v1.0.3
+[1.0.2]: https://github.com/alexremn/keyspan/compare/v1.0.1...v1.0.2
+[1.0.1]: https://github.com/alexremn/keyspan/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/alexremn/keyspan/releases/tag/v1.0.0

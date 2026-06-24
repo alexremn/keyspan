@@ -28,9 +28,10 @@ for plat in linux darwin windows amd64 arm64; do
 done
 
 r=.github/workflows/release.yml
-grep -qF 'generator_generic_slsa3.yml' "$r" || { echo "release: missing SLSA generator" >&2; fail=1; }
-grep -qF 'id-token: write' "$r"             || { echo "release: missing id-token: write" >&2; fail=1; }
-grep -qF 'needs.goreleaser.outputs.hashes' "$r" || { echo "release: missing hashes wiring" >&2; fail=1; }
+grep -qF 'attest-build-provenance' "$r"  || { echo "release: missing build provenance attestation" >&2; fail=1; }
+grep -qF 'subject-checksums' "$r"        || { echo "release: missing provenance subject-checksums" >&2; fail=1; }
+grep -qF 'id-token: write' "$r"          || { echo "release: missing id-token: write" >&2; fail=1; }
+grep -qF 'attestations: write' "$r"      || { echo "release: missing attestations: write" >&2; fail=1; }
 
 if command -v goreleaser >/dev/null 2>&1; then
   goreleaser check || { echo "goreleaser check failed" >&2; fail=1; }
