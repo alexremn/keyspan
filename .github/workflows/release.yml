@@ -15,17 +15,17 @@ jobs:
       id-token: write        # cosign keyless signing + provenance OIDC
       attestations: write    # store SLSA build provenance attestations
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v6.4.0
+      - uses: actions/setup-go@v6
         with:
           go-version: "1.26"
-      - uses: sigstore/cosign-installer@v3.9.1
+      - uses: sigstore/cosign-installer@v4.1.2
       - uses: anchore/sbom-action/download-syft@v0.24.0
       - name: goreleaser
         id: goreleaser
-        uses: goreleaser/goreleaser-action@v7.2.2
+        uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser
           version: "~> v2"
@@ -37,6 +37,6 @@ jobs:
       # SLSA build provenance over every released artifact. Reads goreleaser's
       # checksums.txt (sha256sum format) so one attestation covers all archives.
       # Verify: gh attestation verify <archive> --repo alexremn/keyspan
-      - uses: actions/attest-build-provenance@v4.1.0
+      - uses: actions/attest-build-provenance@v4
         with:
           subject-checksums: dist/checksums.txt
