@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.5] - 2026-09-15
+
+### Changed
+
+- Dependency refresh: `modernc.org/sqlite` 1.53.0 → 1.58.0 (with `modernc.org/libc`
+  1.75.6 and `modernc.org/memory` 1.12.1), `github.com/mattn/go-isatty` 0.0.22 →
+  0.0.24, `golang.org/x/sys` 0.47.0. No schema or behavior change: the committed
+  `examples/outputs/` reproduce byte-for-byte and all six release targets build.
+- CI/release workflows: `actions/setup-go` v7, `anchore/sbom-action` 0.24.2.
+
+## [1.0.4] - 2026-06-25
+
+### Changed
+
+- GitHub Actions are referenced by semver tag instead of commit SHA so Dependabot
+  can track them. Bumped `actions/checkout` v7, `actions/setup-go` v6,
+  `golangci/golangci-lint-action` v9 (golangci-lint v2), `goreleaser/goreleaser-action` v7.
+- `github.com/spf13/cobra` 1.10.2, `github.com/mattn/go-isatty` 0.0.22,
+  `modernc.org/sqlite` 1.53.0.
+
+### Fixed
+
+- Lint findings surfaced by golangci-lint v2 (gofmt alignment, unused parameter).
+
 ## [1.0.3] - 2026-06-21
 
 ### Fixed
@@ -58,7 +82,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   consumer when present. CODEOWNERS team/path ownership attribution is planned for
   v1.1.
 
-[Unreleased]: https://github.com/alexremn/keyspan/compare/v1.0.3...HEAD
+[Unreleased]: https://github.com/alexremn/keyspan/compare/v1.0.5...HEAD
+[1.0.5]: https://github.com/alexremn/keyspan/compare/v1.0.4...v1.0.5
+[1.0.4]: https://github.com/alexremn/keyspan/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/alexremn/keyspan/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/alexremn/keyspan/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/alexremn/keyspan/compare/v1.0.0...v1.0.1
