@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/alexremn/keyspan/internal/graph"
@@ -42,7 +43,7 @@ func Open(path string) (*Store, error) {
 		return nil, err
 	}
 
-	dsn := "file:" + path + "?_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)"
+	dsn := sqliteURI(path) + "?_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)"
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("open sqlite: %w", err)
@@ -61,6 +62,18 @@ func Open(path string) (*Store, error) {
 	}
 
 	return &Store{db: db, salt: salt}, nil
+}
+
+// sqliteURI returns a "file:" URI naming exactly path, so SQLite opens the 0600
+// file ensureFile prepared. SQLite's URI parser would otherwise decode '%', cut
+// the path at '?' or '#', and read a leading "//" as a host; an absolute path
+// therefore gets an empty authority ("file://" + path).
+func sqliteURI(path string) string {
+	p := strings.NewReplacer("%", "%25", "?", "%3F", "#", "%23").Replace(path)
+	if strings.HasPrefix(p, "/") {
+		return "file://" + p
+	}
+	return "file:" + p
 }
 
 // ensureFile creates the DB file with 0600 if it does not exist, else fixes perms.

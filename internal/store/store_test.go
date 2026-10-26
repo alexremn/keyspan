@@ -53,6 +53,88 @@ func TestStoreOpenCreatesFileWith0600(t *testing.T) {
 	}
 }
 
+// The DSN is a SQLite URI, so '%', '?' and '#' in the path must not be decoded
+// or cut, nor a leading "//" read as a host: SQLite has to open exactly the 0600
+// file ensureFile prepared, with every pragma still applied.
+func TestStoreOpenPathWithURIMetacharacters(t *testing.T) {
+	for _, tc := range []struct{ lead, name string }{
+		{"", "pct%41.db"},
+		{"", "hash#frag.db"},
+		{"", "q?mode=ro.db"},
+		{"", "q?_pragma=foreign_keys(0)&x=.db"},
+		{"/", "double-slash.db"},
+	} {
+		name := tc.name
+		t.Run(tc.lead+name, func(t *testing.T) {
+			dir := t.TempDir()
+			path := tc.lead + filepath.Join(dir, name)
+			s, err := Open(path)
+			if err != nil {
+				t.Fatalf("Open: %v", err)
+			}
+			if _, err := s.BeginRun("scan", nil); err != nil {
+				t.Fatalf("BeginRun: %v", err)
+			}
+
+			var journal string
+			var fk int
+			if err := s.db.QueryRow("PRAGMA journal_mode").Scan(&journal); err != nil {
+				t.Fatalf("journal_mode: %v", err)
+			}
+			if err := s.db.QueryRow("PRAGMA foreign_keys").Scan(&fk); err != nil {
+				t.Fatalf("foreign_keys: %v", err)
+			}
+			if journal != "wal" || fk != 1 {
+				t.Errorf("pragmas lost: journal_mode=%q foreign_keys=%d, want wal/1", journal, fk)
+			}
+
+			entries, err := os.ReadDir(dir)
+			if err != nil {
+				t.Fatalf("read dir: %v", err)
+			}
+			for _, e := range entries {
+				if e.Name() != name && e.Name() != name+"-wal" && e.Name() != name+"-shm" {
+					t.Errorf("sqlite wrote stray file %q, want only %q (+ -wal/-shm)", e.Name(), name)
+				}
+				info, err := e.Info()
+				if err != nil {
+					t.Fatalf("stat %s: %v", e.Name(), err)
+				}
+				if perm := info.Mode().Perm(); perm != 0o600 {
+					t.Errorf("%s perm = %o, want 600", e.Name(), perm)
+				}
+			}
+
+			// A stray file can land outside dir (a '#' in a parent dir cuts the
+			// path there), so also prove the DB was written into path itself.
+			if err := s.Close(); err != nil {
+				t.Fatalf("Close: %v", err)
+			}
+			info, err := os.Stat(path)
+			if err != nil {
+				t.Fatalf("stat db: %v", err)
+			}
+			if info.Size() == 0 {
+				t.Errorf("%s is empty: sqlite wrote the DB somewhere else", name)
+			}
+		})
+	}
+}
+
+func TestSqliteURI(t *testing.T) {
+	for in, want := range map[string]string{
+		"./keyspan.db":  "file:./keyspan.db",
+		`C:\data\k.db`:  `file:C:\data\k.db`,
+		"/var/k.db":     "file:///var/k.db",
+		"//srv/k.db":    "file:////srv/k.db",
+		"/a%b?c#d&e.db": "file:///a%25b%3Fc%23d&e.db",
+	} {
+		if got := sqliteURI(in); got != want {
+			t.Errorf("sqliteURI(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
 func TestStoreSaltStableAcrossReopen(t *testing.T) {
 	path := storeTempDB(t)
 	s1, err := Open(path)
