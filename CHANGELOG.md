@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.6] - 2026-10-26
+
+### Fixed
+
+- `--db` paths containing `%`, `?` or `#` now open the file as given. The SQLite
+  DSN is a `file:` URI, so these characters were percent-decoded or cut off:
+  SQLite could write the database to a different file, created with umask
+  permissions instead of `0600`, and a `?` in the path could drop the WAL pragma.
+  A path starting with `//` no longer fails with `invalid uri authority`.
+- Homebrew cask: the macOS quarantine strip now uses GoReleaser's native
+  `hooks.post.install_steps` (GoReleaser 2.19). Under 2.19 the previous
+  `custom_block` rendered `postflight_steps` before `version`, which `brew style`
+  rejects.
+
+### Changed
+
+- Dependency refresh: `modernc.org/sqlite` 1.58.0 → 1.61.0 (SQLite 3.54.1, with
+  `modernc.org/libc` 1.79.0, `golang.org/x/sys` 0.49.0, `github.com/dustin/go-humanize`
+  1.1.0, `github.com/ncruces/go-strftime` 1.1.0). The `go` directive is now `1.26.0`,
+  as the driver requires. No schema or behavior change: the committed
+  `examples/outputs/` reproduce byte-for-byte.
+- Release workflow: `anchore/sbom-action` 0.24.3.
+
 ## [1.0.5] - 2026-09-15
 
 ### Changed
@@ -82,7 +105,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   consumer when present. CODEOWNERS team/path ownership attribution is planned for
   v1.1.
 
-[Unreleased]: https://github.com/alexremn/keyspan/compare/v1.0.5...HEAD
+[Unreleased]: https://github.com/alexremn/keyspan/compare/v1.0.6...HEAD
+[1.0.6]: https://github.com/alexremn/keyspan/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/alexremn/keyspan/compare/v1.0.4...v1.0.5
 [1.0.4]: https://github.com/alexremn/keyspan/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/alexremn/keyspan/compare/v1.0.2...v1.0.3
