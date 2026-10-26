@@ -71,14 +71,13 @@ homebrew_casks:
       name: goreleaser-bot
       email: goreleaser@users.noreply.github.com
     # Strip the macOS quarantine xattr so the unsigned binary runs without a Gatekeeper prompt.
-    # ponytail: custom_block, not hooks.post.install — hooks emit Homebrew's deprecated
-    # `postflight`; switch back once goreleaser ships postflight_steps (goreleaser#6873).
-    custom_block: |
-      postflight_steps do
-        on_macos do
-          run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "keyspan"], chdir: "."
-        end
-      end
+    # install_steps (goreleaser >= 2.19) emits Homebrew's declarative `postflight_steps`.
+    hooks:
+      post:
+        install_steps: |
+          on_macos do
+            run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ .StagedPath }}/keyspan"]
+          end
 
 release:
   draft: false
